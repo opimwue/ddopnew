@@ -1,0 +1,563 @@
+[
+  {
+    "objectID": "40_base_agents/base_agents.html",
+    "href": "40_base_agents/base_agents.html",
+    "title": "Base agents",
+    "section": "",
+    "text": "import logging\nlogging_level = logging.DEBUG\nsource",
+    "crumbs": [
+      "Agents",
+      "Base agents"
+    ]
+  },
+  {
+    "objectID": "40_base_agents/base_agents.html#baseagent",
+    "href": "40_base_agents/base_agents.html#baseagent",
+    "title": "Base agents",
+    "section": "BaseAgent",
+    "text": "BaseAgent\n\n BaseAgent (environment_info:ddopnew.utils.MDPInfo,\n            preprocessors:list[object]|None=None,\n            postprocessors:list[object]|None=None)\n\nBase class for all agents to enforce a common interface. See below for more detailed description of the requriements.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\npreprocessors\nlist[object] | None\nNone\ndefault is empty list\n\n\npostprocessors\nlist[object] | None\nNone\ndefault is empty list\n\n\n\n\nImportant notes:\nAgents are, next to the environments, the core element of this library. The agents are the algorithms that take actions in the environment. They can be any type of algorithms ranging from optimization, supervised learning to reinforcement learning and any combination. Key for all the different agents to work is a common interface that allows them to interact with the environment.\nDraw action:\n\nThe draw_action function is the main interface with the environment. It receives an observation as Numpy array and returns an action as Numpy array. The function draw_action is defined in the [`BaseAgent`](https://opimwue.github.io/ddopnew/40_base_agents/base_agents.html#baseagent) and should not be overwritten as it properly applies pre- and post-processing (see below).\nAgents always expect the observation to be of shape (batch_size, observation_dim) or (batch_size, time_dim, observation_dim) to allow batch-processing during training. Most environment do not have a batch dimension as they apply the step function to a single observation. Hence, the agent will by default add an extra dimension to the observation. If this is not desired, the agent has an attribute “receive_batch_dim” that can be set to True to tell the agent that the observation already has a batch dimension.\nTo create an agent, the function draw_action_ (note the underscore!) needs to be defined that gets the pre-processed observation and returns the action for post-processing. This function should be overwritten in the derived class.\n\nPre- and post-processing:\n\nOften, the environment and the agent have different requirements for the observations and actions (e.g., an agent outputing a continuous action while the environment expects a discrete action). To handle this, the [`BaseAgent`](https://opimwue.github.io/ddopnew/40_base_agents/base_agents.html#baseagent) class applies pre- and post processing to the observations and actions.\nDuring definition, one can already add the processors as lists (to the arguments preprocessors and postprocessors). After instantiation, processors are to be added using the add_preprocessor and add_postprocessor.\nNote that processors are applied in the order they are added.\n\nTraining:\n\nThe [`run_experiment`](https://opimwue.github.io/ddopnew/30_experiment_functions/experiment_functions.html#run_experiment)function in this library currently supports three types of training processes:\n\ntrain_directly: The agent is trained by calling agent.fit(X, Y) directly. In this case, the agent must have a fit function that takes the input and target data.\ntrain_epochs: The agent is iteratively trained on the training data (e.g., via SGD). In this case, the function fit_epoch must be implemented. fit_epoch does not get any argument, rather the dataloader from the environment needs to be given to the agent during initialization. The agent will then call the dataloader interatively to get the training data.\nenv_interaction: The agent is trained by interacting with the environment (e.g., like all reinforcement learning agents). This case build on the Core class from MushroomRL.\n\n\nLoading and saving:\n\nAll agents must implement a save and load function that allows to save and load the agent’s parameters. See the Newsvendor ERM and (w)SAA agents for examples of different ways to save and load agents.\n\n\nsource\n\n\nBaseAgent.draw_action\n\n BaseAgent.draw_action (observation:numpy.ndarray)\n\nMain interfrace to the environemnt. Applies preprocessors to the observation and postprocessors to the action. Internal logic of the agent to be implemented in draw_action_ method.\n\n\n\n\nType\nDetails\n\n\n\n\nobservation\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nBaseAgent.draw_action_\n\n BaseAgent.draw_action_ (observation:numpy.ndarray)\n\nGenerate an action based on the observation - this is the core method that needs to be implemented by all agents.\n\n\n\n\nType\nDetails\n\n\n\n\nobservation\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nBaseAgent.add_preprocessor\n\n BaseAgent.add_preprocessor (preprocessor:object)\n\nadd a preprocessor to the agent\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\npreprocessor\nobject\npre-processor object that can be called via the “call” method\n\n\n\n\nsource\n\n\nBaseAgent.add_postprocessor\n\n BaseAgent.add_postprocessor (postprocessor:object)\n\nadd a postprocessor to the agent\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\npostprocessor\nobject\npost-processor object that can be called via the “call” method\n\n\n\n\nsource\n\n\nBaseAgent.train\n\n BaseAgent.train ()\n\nset the internal state of the agent to train\n\nsource\n\n\nBaseAgent.eval\n\n BaseAgent.eval ()\n\nSet the internal state of the agent to eval. Note that for agents we do not differentiate between val and test modes.\n\nsource\n\n\nBaseAgent.add_batch_dim\n\n BaseAgent.add_batch_dim (input:numpy.ndarray)\n\nAdd a batch dimension to the input array if it doesn’t already have one. This is necessary because most environments do not have a batch dimension, but agents typically expect one. If the environment does have a batch dimension, the agent can set the receive_batch_dim attribute to True to skip this step.\n\n\n\n\nType\nDetails\n\n\n\n\ninput\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nBaseAgent.flatten_X\n\n BaseAgent.flatten_X (X:numpy.ndarray)\n\nFunction to flatten the time-dimension of the feature matrix for agents that require a 2D input. Note applied by default but can be used by agents inheriting from this class.\n\n\n\n\nType\nDetails\n\n\n\n\nX\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nBaseAgent.save\n\n BaseAgent.save ()\n\nSave the agent’s parameters to a file.\n\nsource\n\n\nBaseAgent.load\n\n BaseAgent.load ()\n\nLoad the agent’s parameters from a file.\n\nsource\n\n\nBaseAgent.update_model_params\n\n BaseAgent.update_model_params (default_params:dict, custom_params:dict)\n\noverride default parameters with custom parameters in a dictionary\n\n\n\n\nType\nDetails\n\n\n\n\ndefault_params\ndict\n\n\n\ncustom_params\ndict\n\n\n\nReturns\ndict\n\n\n\n\n\n# #| export\n\n# def check_cu_co(cu, co, n_outputs):\n#     \"\"\"Validate under- and overage costs.\n\n#     Parameters\n#     ----------\n#     cu : {ndarray, Number or None}, shape (n_outputs,)\n#        The underage costs per unit. Passing cu=None will output an array of ones.\n#     co : {ndarray, Number or None}, shape (n_outputs,)\n#        The overage costs per unit. Passing co=None will output an array of ones.\n#     n_outputs : int\n#        The number of outputs.\n#     Returns\n#     -------\n#     cu : ndarray, shape (n_outputs,)\n#        Validated underage costs. It is guaranteed to be \"C\" contiguous.\n#     co : ndarray, shape (n_outputs,)\n#        Validated overage costs. It is guaranteed to be \"C\" contiguous.\n#     \"\"\"\n#     costs = [[cu, \"cu\"], [co, \"co\"]]\n#     costs_validated = []\n#     for c in costs:\n#         if c[0] is None:\n#             cost = np.ones(n_outputs, dtype=np.float64)\n#         elif isinstance(c[0], numbers.Number):\n#             cost = np.full(n_outputs, c[0], dtype=np.float64)\n#         else:\n#             cost = check_array(\n#                 c[0], accept_sparse=False, ensure_2d=False, dtype=np.float64,\n#                 order=\"C\"\n#             )\n#             if cost.ndim != 1:\n#                 raise ValueError(c[1], \"must be 1D array or scalar\")\n\n#             if cost.shape != (n_outputs,):\n#                 raise ValueError(\"{}.shape == {}, expected {}!\"\n#                                  .format(c[1], cost.shape, (n_outputs,)))\n#         costs_validated.append(cost)\n#     cu = costs_validated[0]\n#     co = costs_validated[1]\n#     return cu, co\n\n# class NewsvendorSAAagentOLD(BaseAgent):\n\n#     def __init__(self, environment_info, cu, co):\n#         self.cu = cu\n#         self.co = co\n\n#         self.sl = cu / (cu + co)\n\n#         self.quantiles = np.array([0.0])\n\n#         super().__init__(environment_info)\n\n#         self.fitted = False\n\n#     def _calc_weights(self):\n#         weights = np.full(self.n_samples_, 1 / self.n_samples_)\n#         return weights\n\n#     def fit(self, Y, X, mask=None):\n\n#         demand = Y\n#         features = X\n\n#         self.mask=mask\n#         y=demand\n\n#         if mask is not None:\n#             if demand.shape != mask.shape:\n#                 if demand.shape[1]==1 & len(mask.shape)==1:\n#                     mask = mask.reshape((-1,1))\n#                     self.mask = mask\n#                 if demand.shape != mask.shape:\n#                     raise ValueError(\"Shapes of mask and demand do not match\")\n#                 # check if 1 either in mask.shape or demand.shape, if yes squeeze\n#             demand=demand*mask\n       \n#         y = check_array(y, ensure_2d=False, accept_sparse='csr')\n\n#         if y.ndim == 1:\n#             y = np.reshape(y, (-1, 1))\n\n#         # Training data\n#         self.y_ = y\n#         self.n_samples_ = y.shape[0]\n\n#         # Determine output settings\n#         self.n_outputs_ = y.shape[1]\n\n#         # Check and format under- and overage costs\n#         self.cu_, self.co_ = check_cu_co(self.cu, self.co, self.n_outputs_)\n\n#         self.q_star = np.array(self._findQ(self._calc_weights()))\n\n#         self.fitted=True\n\n#         return self\n\n#     def _findQ(self, weights):\n#         \"\"\"Calculate the optimal order quantity q\"\"\"\n\n#         y = self.y_\n#         q = []\n\n#         for k in range(self.n_outputs_):\n#             alpha = self.cu_[k] / (self.cu_[k] + self.co_[k])\n#             y_product = y[:,k]\n#             if self.mask is not None:\n#                 mask_product = self.mask[:,k]\n#                 y_product = y_product[mask_product.astype(bool)]\n#             # print(y_product.shape)\n#             q.append(np.quantile(y_product, alpha, interpolation=\"higher\"))\n#         print(\"found optimal q:\", q)\n#         return q\n\n#     def draw_action(self, *args, **kwargs):\n\n#         if self.fitted:\n#             pred = self.q_star\n            \n#         else:\n#             pred = np.random.rand(1)  \n#         return pred",
+    "crumbs": [
+      "Agents",
+      "Base agents"
+    ]
+  },
+  {
+    "objectID": "20_base_env/base_env.html",
+    "href": "20_base_env/base_env.html",
+    "title": "Base Environment",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Environments",
+      "Base Environment"
+    ]
+  },
+  {
+    "objectID": "20_base_env/base_env.html#baseenvironment",
+    "href": "20_base_env/base_env.html#baseenvironment",
+    "title": "Base Environment",
+    "section": "BaseEnvironment",
+    "text": "BaseEnvironment\n\n BaseEnvironment (mdp_info:ddopnew.utils.MDPInfo, mode:str='train')\n\nBase class for environments enforcing a common interface.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nmdp_info\nMDPInfo\n\nMDPInfo object to ensure compatibility with the agents\n\n\nmode\nstr\ntrain\nInitial mode (train, val, test) of the environment\n\n\nReturns\nNone\n\n\n\n\n\n\nImportant notes:\ninit method:\n\nWhen adding parameters to the environment, make sure to always add them via self.[parameter name] = set_param(…). This ensures all parameters are of the correct types and shapes.\nDuring the init method, any Gymnasium environment expects the action and observation space to be defined. For clarity, avoid doing it directly in the init, but rather use the functions set_action_space() and set_observation_space() and call them in the `___init___ method.\n\ntrain, val, test, and horizon (episode length):\n\nWhen the __init__ method is called, the environment executes the train(), val() or test() methods. Therefore, they must be implemented in a way that they work right during set-up.\ntrain(), val() and test() methods are provided in the base class, but can also be overwritten if necessary. In any case, they must set the dataloader to the correct dataset to ensure no data leakage. They also need to update mdp_info to update the horizon (episode length) of the environment\nThe horizon for validation and testing will be equal to the length of those datasets. For training, there is a parameter horizon_train that either contains a string “use_all_data” or an integer. If it is the former, the horizon will be the length of the training dataset. If it is the latter, the environment will play an episode of length horizon_train starting at a random point of the training dataset.\n\nstep method:\n\nThe step method is the core of the environment, calculating the next state (observation) and reward given an action. For clarity, the construction of the next state (we call it more general observation to include POMDPs) is done in a separate method called get_observation() that must be called inside the step function. See documentation below and the Newsvendor environment envs.inventory.NewsvendorEnv for an example.\nThe dataloader will typically return an X,Y pair (where X are some features and Y typically is demand) The X is necessary at the end of the step to construct the next observation to be returned to the agent. The Y is only relevant one step later to calculate the reward. Hence, Y is typically transferred to the next step method via an object variable like self.demand (see envs.inventory.NewsvendorEnv as an example).\n\nreset method:\n\nThe reset method may depend strongly on the environment dynamics, so it must be implemented for the specific environment. It needs to fulfill two requirements: 1) it needs to differenticate between train, val, and test mode and 2) when setting the training mode, it needs to take the horizon_train parameter into account.\nAt the end of the function, first the reset_index() method should be called (either with a specific index as string or the flag \"random\"as input) and then the get_observation() method to construct the first observation.\n\n\nsource\n\n\nBaseEnvironment.set_param\n\n BaseEnvironment.set_param (name:str,\n                            input:ddopnew.utils.Parameter|float|numpy.ndar\n                            ray, shape:tuple=(1,), new:bool=False)\n\nSet a parameter for the environment. It converts scalar values to numpy arrays and ensures that environment parameters are either of the Parameter class of Numpy arrays. If new is set to True, the function will create a new parameter or update an existing one otherwise. If new is set to False, the function will raise an error if the parameter does not exist.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nname\nstr\n\nname of the parameter (will become the attribute name)\n\n\ninput\nddopnew.utils.Parameter | float | numpy.ndarray\n\ninput value of the parameter\n\n\nshape\ntuple\n(1,)\nshape of the parameter\n\n\nnew\nbool\nFalse\nwhether to create a new parameter or update an existing one\n\n\nReturns\nNone\n\n\n\n\n\n\nsource\n\n\nBaseEnvironment.info\n\n BaseEnvironment.info ()\n\nReturns: The MDPInfo object of the environment.\n\nsource\n\n\nBaseEnvironment.mode\n\n BaseEnvironment.mode ()\n\nReturns: A string with the current mode (train, test val) of the environment.\n\nsource\n\n\nBaseEnvironment.set_action_space\n\n BaseEnvironment.set_action_space ()\n\nSet the action space of the environment.\n\nsource\n\n\nBaseEnvironment.set_observation_space\n\n BaseEnvironment.set_observation_space ()\n\nSet the observation space of the environment. In general, this can be also a dict space, but the agent must have the appropriate pre-processor.\n\nsource\n\n\nBaseEnvironment.get_observation\n\n BaseEnvironment.get_observation ()\n\nReturn the current observation. Typically constructed from the output of the dataloader and internal dynamics (such as inventory levels, pipeline vectors, etc.) of the environment.\n\nsource\n\n\nBaseEnvironment.reset\n\n BaseEnvironment.reset ()\n\nReset the environment. This function must be provided, using the function self.reset_index() to handle indexing. It needs to account for the current training mode train, val, or test and handle the horizon_train param. See the reset function for the NewsvendorEnv for an example.\n\nsource\n\n\nBaseEnvironment.set_index\n\n BaseEnvironment.set_index (index=None)\n\nHandle the index of the environment.\n\nsource\n\n\nBaseEnvironment.reset_index\n\n BaseEnvironment.reset_index (start_index:Union[int,str])\n\nReset the index of the environment. If start_index is an integer, the index is set to this value. If start_index is “random”, the index is set to a random integer between 0 and the length of the training data.\n\nsource\n\n\nBaseEnvironment.update_mdp_info\n\n BaseEnvironment.update_mdp_info (gamma=None, horizon=None)\n\nUpdate the MDP info of the environment.\n\nsource\n\n\nBaseEnvironment.train\n\n BaseEnvironment.train (update_mdp_info=True)\n\nSet the environment in training mode by both setting the internal state self._train and the dataloader. If the horizon is set to “use_all_data”, the horizon is set to the length of the training data, otherwise it is set to the horizon_train attribute of the environment. Finally, the function updates the MDP info and resets with the new state.\n\nsource\n\n\nBaseEnvironment.val\n\n BaseEnvironment.val (update_mdp_info=True)\n\nSet the environment in validation mode by both setting the internal state self._val and the dataloader. The horizon of val is always set to the length of the validation data. Finally, the function updates the MDP info and resets with the new state.\n\nsource\n\n\nBaseEnvironment.test\n\n BaseEnvironment.test (update_mdp_info=True)\n\nSet the environment in testing mode by both setting the internal state self._test and the dataloader. The horizon of test is always set to the length of the test data. Finally, the function updates the MDP info and resets with the new state.",
+    "crumbs": [
+      "Environments",
+      "Base Environment"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_saa_agents.html",
+    "href": "41_NV_agents/nv_saa_agents.html",
+    "title": "SAA based agents",
+    "section": "",
+    "text": "import logging\nlogging_level = logging.DEBUG\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "SAA based agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_saa_agents.html#basesaaagent",
+    "href": "41_NV_agents/nv_saa_agents.html#basesaaagent",
+    "title": "SAA based agents",
+    "section": "BaseSAAagent",
+    "text": "BaseSAAagent\n\n BaseSAAagent (environment_info:ddopnew.utils.MDPInfo,\n               preprocessors:Optional[List[object]]=None,\n               postprocessors:Optional[List[object]]=None)\n\nBase class for Sample Average Approximation Agents, implementing the main method to find the quntile of some (weighted) empirical distribution.\n\nsource\n\nBaseSAAagent._validate_X_predict\n\n BaseSAAagent._validate_X_predict (X)\n\nValidate X data before prediction\n\nsource\n\n\nBaseSAAagent.find_weighted_quantiles\n\n BaseSAAagent.find_weighted_quantiles (weights, weightPosIndices, sl, y)\n\nFind the weighted quantile of a range of data y. It assumes that all arrays are of shape (n_samples, n_outputs). Note that it has not been tested for n_outputs &gt; 1.\n\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "SAA based agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_saa_agents.html#newsvendorsaaagent",
+    "href": "41_NV_agents/nv_saa_agents.html#newsvendorsaaagent",
+    "title": "SAA based agents",
+    "section": "NewsvendorSAAagent",
+    "text": "NewsvendorSAAagent\n\n NewsvendorSAAagent (environment_info:ddopnew.utils.MDPInfo,\n                     cu:float|numpy.ndarray, co:float|numpy.ndarray,\n                     preprocessors:list[object]|None=None,\n                     postprocessors:list[object]|None=None)\n\nNewsvendor agent that uses Sample Average Approximation to find the quantile of the empirical distribution\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ncu\nfloat | numpy.ndarray\n\nunderage cost\n\n\nco\nfloat | numpy.ndarray\n\noverage cost\n\n\npreprocessors\nlist[object] | None\nNone\n\n\n\npostprocessors\nlist[object] | None\nNone\n\n\n\n\n\nFurther information:\nReferences:\n.. [1] Levi, Retsef, Georgia Perakis, and Joline Uichanco. \"The data-driven newsvendor problem: new bounds and insights.\"\n       Operations Research 63.6 (2015): 1294-1306.\n\nsource\n\n\nNewsvendorSAAagent.fit\n\n NewsvendorSAAagent.fit (X:numpy.ndarray, Y:numpy.ndarray)\n\nFit the agent to the data. The agent will find the quantile of the empirical distribution of the data.\n\n\n\n\nType\nDetails\n\n\n\n\nX\nndarray\nfeatures will be ignored\n\n\nY\nndarray\n\n\n\nReturns\nNone\n\n\n\n\n\nsource\n\n\nNewsvendorSAAagent.draw_action_\n\n NewsvendorSAAagent.draw_action_ (observation:numpy.ndarray)\n\nDraw an action from the quantile of the empirical distribution.\n\n\n\n\nType\nDetails\n\n\n\n\nobservation\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nNewsvendorSAAagent.save\n\n NewsvendorSAAagent.save (path:str, overwrite:bool=True)\n\nSave the quantiles to a file in the specified directory.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\npath\nstr\n\nThe directory where the file will be saved.\n\n\noverwrite\nbool\nTrue\nAllow overwriting; if False, a FileExistsError will be raised if the file exists.\n\n\n\n\nsource\n\n\nNewsvendorSAAagent.load\n\n NewsvendorSAAagent.load (path:str)\n\nLoad the quantiles from a file.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\npath\nstr\nOnly the path to the folder is needed, not the file itself\n\n\n\n\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "SAA based agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_saa_agents.html#basewsaaagent",
+    "href": "41_NV_agents/nv_saa_agents.html#basewsaaagent",
+    "title": "SAA based agents",
+    "section": "BasewSAAagent",
+    "text": "BasewSAAagent\n\n BasewSAAagent (environment_info:ddopnew.utils.MDPInfo,\n                cu:float|numpy.ndarray, co:float|numpy.ndarray,\n                preprocessors:list[object]|None=None,\n                postprocessors:list[object]|None=None)\n\nBase class for weighted Sample Average Approximation (wSAA) Agents\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ncu\nfloat | numpy.ndarray\n\n\n\n\nco\nfloat | numpy.ndarray\n\n\n\n\npreprocessors\nlist[object] | None\nNone\n\n\n\npostprocessors\nlist[object] | None\nNone\n\n\n\n\n\nsource\n\nBasewSAAagent.fit\n\n BasewSAAagent.fit (X:numpy.ndarray, Y:numpy.ndarray)\n\n*Fit the agent to the data. The function will call _get_fitted_model which will train a machine learning model to determine the sample weightes (e.g., kNN, DT, RF).*\n\n\n\n\nType\nDetails\n\n\n\n\nX\nndarray\n\n\n\nY\nndarray\n\n\n\n\n\nsource\n\n\nBaseAgent.draw_action\n\n BaseAgent.draw_action (observation:numpy.ndarray)\n\nMain interfrace to the environemnt. Applies preprocessors to the observation and postprocessors to the action. Internal logic of the agent to be implemented in draw_action_ method.\n\n\n\n\nType\nDetails\n\n\n\n\nobservation\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nBasewSAAagent._get_fitted_model\n\n BasewSAAagent._get_fitted_model (X, y)\n\nInitialise the underlying model - depending on the underlying machine learning model\n\nsource\n\n\nBasewSAAagent._calc_weights\n\n BasewSAAagent._calc_weights (sample)\n\nCalculate the sample weights - depending on the underlying machine learning model\n\nsource\n\n\nBasewSAAagent.predict\n\n BasewSAAagent.predict (X:numpy.ndarray)\n\nPredict value for X by finding the quantiles of the empirical distribution based on the sample weights predicted by the underlying machine learning model.\n\n\n\n\nType\nDetails\n\n\n\n\nX\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nBasewSAAagent.save\n\n BasewSAAagent.save (path:str, overwrite:bool=True)\n\nSave the scikit-learn model to a file in the specified directory.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\npath\nstr\n\nThe directory where the file will be saved.\n\n\noverwrite\nbool\nTrue\nAllow overwriting; if False, a FileExistsError will be raised if the file exists.\n\n\n\n\nsource\n\n\nBasewSAAagent.load\n\n BasewSAAagent.load (path:str)\n\nLoad the scikit-learn model from a file.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\npath\nstr\nOnly the path to the folder is needed, not the file itself\n\n\n\n\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "SAA based agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_saa_agents.html#newsvendorrfwsaaagent",
+    "href": "41_NV_agents/nv_saa_agents.html#newsvendorrfwsaaagent",
+    "title": "SAA based agents",
+    "section": "NewsvendorRFwSAAagent",
+    "text": "NewsvendorRFwSAAagent\n\n NewsvendorRFwSAAagent (environment_info:ddopnew.utils.MDPInfo,\n                        cu:float|numpy.ndarray, co:float|numpy.ndarray,\n                        preprocessors:list[object]|None=None,\n                        postprocessors:list[object]|None=None,\n                        n_estimators:int=100,\n                        criterion:str='squared_error',\n                        max_depth:int|None=None, min_samples_split:int=2,\n                        min_samples_leaf:int=1,\n                        min_weight_fraction_leaf:float=0.0,\n                        max_features:int|float|str|None=1.0,\n                        max_leaf_nodes:int|None=None,\n                        min_impurity_decrease:float=0.0,\n                        bootstrap:bool=True, oob_score:bool=False,\n                        n_jobs:int|None=None, random_state:int|numpy.rando\n                        m.mtrand.RandomState|None=None, verbose:int=0,\n                        warm_start:bool=False, ccp_alpha:float=0.0,\n                        max_samples:int|float|None=None,\n                        monotonic_cst:numpy.ndarray|None=None)\n\nNewsvendor agent that uses weighted Sample Average Approximation based on Random Forest\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ncu\nfloat | numpy.ndarray\n\nunderage cost\n\n\nco\nfloat | numpy.ndarray\n\noverage cost\n\n\npreprocessors\nlist[object] | None\nNone\nList of preprocessors to apply to the observation\n\n\npostprocessors\nlist[object] | None\nNone\nList of postprocessors to apply to the action\n\n\nn_estimators\nint\n100\nThe number of trees in the forest.\n\n\ncriterion\nstr\nsquared_error\nFunction to measure the quality of a split.\n\n\nmax_depth\nint | None\nNone\nMaximum depth of the tree; None means unlimited.\n\n\nmin_samples_split\nint\n2\nMinimum samples required to split a node.\n\n\nmin_samples_leaf\nint\n1\nMinimum samples required to be at a leaf node.\n\n\nmin_weight_fraction_leaf\nfloat\n0.0\nMinimum weighted fraction of the total weights at a leaf node.\n\n\nmax_features\nint | float | str | None\n1.0\nNumber of features to consider when looking for the best split.\n\n\nmax_leaf_nodes\nint | None\nNone\nMaximum number of leaf nodes; None means unlimited.\n\n\nmin_impurity_decrease\nfloat\n0.0\nMinimum impurity decrease required to split a node.\n\n\nbootstrap\nbool\nTrue\nWhether to use bootstrap samples when building trees.\n\n\noob_score\nbool\nFalse\nWhether to use out-of-bag samples to estimate R^2 on unseen data.\n\n\nn_jobs\nint | None\nNone\nNumber of jobs to run in parallel; None means 1.\n\n\nrandom_state\nint | numpy.random.mtrand.RandomState | None\nNone\nControls randomness for bootstrapping and feature sampling.\n\n\nverbose\nint\n0\nControls the verbosity when fitting and predicting.\n\n\nwarm_start\nbool\nFalse\nIf True, reuse solution from previous fit and add more estimators.\n\n\nccp_alpha\nfloat\n0.0\nComplexity parameter for Minimal Cost-Complexity Pruning.\n\n\nmax_samples\nint | float | None\nNone\nNumber of samples to draw when bootstrap is True.\n\n\nmonotonic_cst\nnumpy.ndarray | None\nNone\nMonotonic constraints for features.\n\n\n\n\nFurther information:\nNotes —–\nThe default values for the parameters controlling the size of the trees (e.g. max_depth, min_samples_leaf, etc.) lead to fully grown and unpruned trees which can potentially be very large on some data sets. To reduce memory consumption, the complexity and size of the trees should be controlled by setting those parameter values. The features are always randomly permuted at each split. Therefore, the best found split may vary, even with the same training data, max_features=n_features and bootstrap=False, if the improvement of the criterion is identical for several splits enumerated during the search of the best split. To obtain a deterministic behaviour during fitting, random_state has to be fixed.\nReferences ———-\n.. [1] L. Breiman, \"Random Forests\", Machine Learning, 45(1), 5-32, 2001.\n\n.. [2] P. Geurts, D. Ernst., and L. Wehenkel, \"Extremely randomized\n       trees\", Machine Learning, 63(1), 3-42, 2006.\n\n.. [3] Bertsimas, Dimitris, and Nathan Kallus, \"From predictive to prescriptive analytics.\"\n       arXiv preprint arXiv:1402.5481 (2014).\n\n.. [4] scikit-learn, RandomForestRegressor,\n       &lt;https://github.com/scikit-learn/scikit-learn/blob/master/sklearn/ensemble/_forest.py&gt;\n       \n.. [5] Scornet, Erwan. \"Random forests and kernel methods.\"\n       IEEE Transactions on Information Theory 62.3 (2016): 1485-1500.\n\nsource\n\n\nNewsvendorRFwSAAagent._get_fitted_model\n\n NewsvendorRFwSAAagent._get_fitted_model (X:numpy.ndarray,\n                                          Y:numpy.ndarray)\n\nFit the underlying machine learning model using all X and Y data in the train set.\n\n\n\n\nType\nDetails\n\n\n\n\nX\nndarray\n\n\n\nY\nndarray\n\n\n\n\n\nsource\n\n\nNewsvendorRFwSAAagent._calc_weights\n\n NewsvendorRFwSAAagent._calc_weights (sample:numpy.ndarray)\n\nCalculate the sample weights based on the Random Forest model.\n\n\n\n\nType\nDetails\n\n\n\n\nsample\nndarray\n\n\n\nReturns\ntuple\n\n\n\n\nExample usage:\n\nfrom ddopnew.envs.inventory import NewsvendorEnv\nfrom ddopnew.dataloaders.tabular import XYDataLoader\nfrom ddopnew.experiment_functions import run_experiment, test_agent\n\n\nval_index_start = 800 #90_000\ntest_index_start = 900 #100_000\n\nX = np.random.rand(1000, 2)\nY = np.random.rand(1000, 1)\n\ndataloader = XYDataLoader(X, Y, val_index_start, test_index_start)\n\nenvironment = NewsvendorEnv(\n    dataloader = dataloader,\n    underage_cost = 0.42857,\n    overage_cost = 1.0,\n    gamma = 0.999,\n    horizon_train = 365,\n)\n\nagent = NewsvendorSAAagent(environment.mdp_info, cu=0.42857, co=1.0)\nagent = NewsvendorRFwSAAagent(environment.mdp_info, cu=0.42857, co=1.0)\n\nenvironment.test()\nagent.eval()\n\nR, J = test_agent(agent, environment)\n\nprint(R, J)\n\nrun_experiment(agent, environment, 100, run_id = \"test\", save_best=True) # fit agent via run_experiment function\n    \nenvironment.test()\nagent.eval()\n\nR, J = test_agent(agent, environment)\n\nprint(R, J)\n\n-21.1285585223441 -20.105127042239765\n\n\nWARNING:root:Overwriting file results/test/saved_models/best/model.joblib\n\n\nresults\n-18.939174110155953 -18.082931870224613 -18.939174110155953 -18.082931870224613\n-15.767535728036904 -14.990487078789942",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "SAA based agents"
+    ]
+  },
+  {
+    "objectID": "10_dataloaders/tabular_dataloaders.html",
+    "href": "10_dataloaders/tabular_dataloaders.html",
+    "title": "Tabular dataloaders",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Dataloaders",
+      "Tabular dataloaders"
+    ]
+  },
+  {
+    "objectID": "10_dataloaders/tabular_dataloaders.html#xydataloader",
+    "href": "10_dataloaders/tabular_dataloaders.html#xydataloader",
+    "title": "Tabular dataloaders",
+    "section": "XYDataLoader",
+    "text": "XYDataLoader\n\n XYDataLoader (X:numpy.ndarray, Y:numpy.ndarray,\n               val_index_start:Optional[int]=None,\n               test_index_start:Optional[int]=None,\n               lag_window_params:dict=None)\n\nA class for datasets with the typicall X, Y structure. Both X and Y are numpy arrays. X may be of shape (datapoints, features) or (datapoints, sequence_length, features) if lag features are used. The prep_lag_features can be used to create those lag features. Y is of shape (datapoints, units).\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nX\nndarray\n\n\n\n\nY\nndarray\n\n\n\n\nval_index_start\nOptional\nNone\n\n\n\ntest_index_start\nOptional\nNone\n\n\n\nlag_window_params\ndict\nNone\ndefault: {‘lag_window’: 0, ‘include_y’: False, ‘pre_calc-calc’: False}\n\n\n\n\nsource\n\nXYDataLoader.prep_lag_features\n\n XYDataLoader.prep_lag_features (lag_window:int=0, include_y:bool=False,\n                                 pre_calc:bool=False)\n\nCreate lag feature for the dataset. If “inlcude_y” is true, then a lag-1 of of the target variable is added as a feature. If lag-window is &gt; 0, the lag features are added as middle dimension to X. Note that this, e.g., means that with a lag window of 1, the data will include 2 time steps, the current features including lag-1 demand and the lag-1 features including lag-2 demand. If pre-calc is true, all these calculations are performed on the entire dataset reduce computation time later on at the expense of increases memory usage.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nlag_window\nint\n0\nlength of the lage window\n\n\ninclude_y\nbool\nFalse\nif lag demand shall be included as feature\n\n\npre_calc\nbool\nFalse\nif all lags are pre-calculated for the entire dataset\n\n\n\n\nsource\n\n\nXYDataLoader.__getitem__\n\n XYDataLoader.__getitem__ (idx)\n\nget item by index, depending on the dataset type (train, val, test)\n\nsource\n\n\nXYDataLoader.get_all_X\n\n XYDataLoader.get_all_X (dataset_type:str='train')\n\nReturns the entire features dataset. Return either the train, val, test, or all data.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndataset_type\nstr\ntrain\ncan be ‘train’, ‘val’, ‘test’, ‘all’\n\n\n\n\nsource\n\n\nXYDataLoader.get_all_Y\n\n XYDataLoader.get_all_Y (dataset_type:str='train')\n\nReturns the entire target dataset. Return either the train, val, test, or all data.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndataset_type\nstr\ntrain\ncan be ‘train’, ‘val’, ‘test’, ‘all’\n\n\n\nExample usage of [`XYDataLoader`](https://opimwue.github.io/ddopnew/10_dataloaders/tabular_dataloaders.html#xydataloader) for simple dataset:\n\nX = np.random.standard_normal((100, 2))\nY = np.random.standard_normal((100, 1))\nY += 2*X[:,0].reshape(-1, 1) + 3*X[:,1].reshape(-1, 1)\n\ndataloader = XYDataLoader(X = X, Y = Y)\n\nsample_X, sample_Y = dataloader[0]\nprint(\"sample:\", sample_X, sample_Y)\nprint(\"sample shape Y:\", sample_Y.shape)\n\nprint(\"length:\", len(dataloader))\n\nsample: [0.92106972 0.70156946] [3.65913853]\nsample shape Y: (1,)\nlength: 100\n\n\nExample usage of [`XYDataLoader`](https://opimwue.github.io/ddopnew/10_dataloaders/tabular_dataloaders.html#xydataloader) on how to handle train, val, and test set:\n\nX = np.random.standard_normal((10, 2))\nY = np.random.standard_normal((10, 1))\nY += 2*X[:,0].reshape(-1, 1) + 3*X[:,1].reshape(-1, 1)\n\ndataloader = XYDataLoader(X = X, Y = Y, val_index_start=6, test_index_start=8)\n\nsample_X, sample_Y = dataloader[0]\n\nprint(\"length train:\", dataloader.len_train, \"length val:\", dataloader.len_val, \"length test:\", dataloader.len_test)\n\nprint(\"\")\nprint(\"### Data from train set ###\")\nfor i in range(dataloader.len_train):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\ndataloader.val()\n\nprint(\"\")\nprint(\"### Data from val set ###\")\nfor i in range(dataloader.len_val):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\ndataloader.test()\n\nprint(\"\")\nprint(\"### Data from test set ###\")\nfor i in range(dataloader.len_test):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\ndataloader.train()\n\nprint(\"\")\nprint(\"### Data from train set again ###\")\nfor i in range(dataloader.len_train):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\nlength train: 6 length val: 2 length test: 2\n\n### Data from train set ###\nidx: 0 data: [ 0.46617153 -1.5426306 ] [-3.42515345]\nidx: 1 data: [0.5959217  0.03931713] [1.02734347]\nidx: 2 data: [-0.28027772 -0.3641926 ] [-0.21429458]\nidx: 3 data: [-0.28347742 -1.60037267] [-4.4814403]\nidx: 4 data: [ 0.01677989 -0.84802836] [-2.56829448]\nidx: 5 data: [0.54772979 0.48605575] [1.9488545]\n\n### Data from val set ###\nidx: 0 data: [ 0.30611839 -1.38076852] [-2.76311498]\nidx: 1 data: [0.46367473 1.40884102] [4.47144858]\n\n### Data from test set ###\nidx: 0 data: [-0.30705721  0.42819263] [1.50589912]\nidx: 1 data: [ 0.76539705 -0.06903068] [2.19095387]\n\n### Data from train set again ###\nidx: 0 data: [ 0.46617153 -1.5426306 ] [-3.42515345]\nidx: 1 data: [0.5959217  0.03931713] [1.02734347]\nidx: 2 data: [-0.28027772 -0.3641926 ] [-0.21429458]\nidx: 3 data: [-0.28347742 -1.60037267] [-4.4814403]\nidx: 4 data: [ 0.01677989 -0.84802836] [-2.56829448]\nidx: 5 data: [0.54772979 0.48605575] [1.9488545]\n\n\nExample usage of [`XYDataLoader`](https://opimwue.github.io/ddopnew/10_dataloaders/tabular_dataloaders.html#xydataloader) on how to include lag features:\n\nX = np.random.standard_normal((10, 2))\nY = np.random.standard_normal((10, 1))\nY += 2*X[:,0].reshape(-1, 1) + 3*X[:,1].reshape(-1, 1)\n\nlag_window_params = {'lag_window': 1, 'include_y': True, 'pre_calc': True}\n\ndataloader = XYDataLoader(X = X, Y = Y, val_index_start=6, test_index_start=8, lag_window_params=lag_window_params)\n\nsample_X, sample_Y = dataloader[0]\n\nprint(\"length train:\", dataloader.len_train, \"length val:\", dataloader.len_val, \"length test:\", dataloader.len_test)\n\nprint(\"\")\nprint(\"### Data from train set ###\")\nfor i in range(dataloader.len_train):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\ndataloader.val()\n\nprint(\"\")\nprint(\"### Data from val set ###\")\nfor i in range(dataloader.len_val):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\ndataloader.test()\n\nprint(\"\")\nprint(\"### Data from test set ###\")\nfor i in range(dataloader.len_test):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\n\ndataloader.train()\n\nprint(\"\")\nprint(\"### Data from train set again ###\")\nfor i in range(dataloader.len_train):\n    sample_X, sample_Y = dataloader[i]\n    print(\"idx:\", i, \"data:\", sample_X, sample_Y)\n\nlength train: 4 length val: 2 length test: 2\n\n### Data from train set ###\nidx: 0 data: [[-0.02395273 -0.36204873 -3.2205055 ]\n [ 1.45525805 -1.11224179 -0.94619   ]] [0.2521341]\nidx: 1 data: [[ 1.45525805 -1.11224179 -0.94619   ]\n [ 0.23480631  1.18639722  0.2521341 ]] [3.53852786]\nidx: 2 data: [[0.23480631 1.18639722 0.2521341 ]\n [1.82872894 1.5804164  3.53852786]] [7.25937768]\nidx: 3 data: [[ 1.82872894  1.5804164   3.53852786]\n [ 0.31580198 -0.31130287  7.25937768]] [-1.96853374]\n\n### Data from val set ###\nidx: 0 data: [[ 0.31580198 -0.31130287  7.25937768]\n [ 0.72142481 -0.76287586 -1.96853374]] [-1.33508208]\nidx: 1 data: [[ 0.72142481 -0.76287586 -1.96853374]\n [ 0.27407661 -2.12056758 -1.33508208]] [-6.31542487]\n\n### Data from test set ###\nidx: 0 data: [[ 0.27407661 -2.12056758 -1.33508208]\n [ 0.20329526 -1.08744979 -6.31542487]] [-4.01934226]\nidx: 1 data: [[ 0.20329526 -1.08744979 -6.31542487]\n [ 1.89736436  0.80393495 -4.01934226]] [6.99178952]\n\n### Data from train set again ###\nidx: 0 data: [[-0.02395273 -0.36204873 -3.2205055 ]\n [ 1.45525805 -1.11224179 -0.94619   ]] [0.2521341]\nidx: 1 data: [[ 1.45525805 -1.11224179 -0.94619   ]\n [ 0.23480631  1.18639722  0.2521341 ]] [3.53852786]\nidx: 2 data: [[0.23480631 1.18639722 0.2521341 ]\n [1.82872894 1.5804164  3.53852786]] [7.25937768]\nidx: 3 data: [[ 1.82872894  1.5804164   3.53852786]\n [ 0.31580198 -0.31130287  7.25937768]] [-1.96853374]",
+    "crumbs": [
+      "Dataloaders",
+      "Tabular dataloaders"
+    ]
+  },
+  {
+    "objectID": "10_dataloaders/distribution_loaders.html",
+    "href": "10_dataloaders/distribution_loaders.html",
+    "title": "Distribution-based dataloaders",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Dataloaders",
+      "Distribution-based dataloaders"
+    ]
+  },
+  {
+    "objectID": "10_dataloaders/distribution_loaders.html#normaldistributiondataloader",
+    "href": "10_dataloaders/distribution_loaders.html#normaldistributiondataloader",
+    "title": "Distribution-based dataloaders",
+    "section": "NormalDistributionDataLoader",
+    "text": "NormalDistributionDataLoader\n\n NormalDistributionDataLoader (mean:float, std:float, num_units:int,\n                               truncated_low:int=0,\n                               truncated_high:int=None)\n\nA dataloader that generates a dataset of normally distributed values.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nmean\nfloat\n\n\n\n\nstd\nfloat\n\n\n\n\nnum_units\nint\n\n\n\n\ntruncated_low\nint\n0\n\n\n\ntruncated_high\nint\nNone\n\n\n\n\n\ndataloader = NormalDistributionDataLoader(mean=3, std=4, num_units=2)\n\nsample_X, sample_Y = dataloader[0]\nprint(\"sample:\", sample_X, sample_Y)\nprint(\"sample shape Y:\", sample_Y.shape)\n\n## The next print should give an error:\n#print(\"length:\", len(dataloader))\n\nsample: None [0. 0.]\nsample shape Y: (2,)\n\n\n\ndataloader.train()\ndataloader.val()\ndataloader.test()",
+    "crumbs": [
+      "Dataloaders",
+      "Distribution-based dataloaders"
+    ]
+  },
+  {
+    "objectID": "00_utils/postprocessors.html",
+    "href": "00_utils/postprocessors.html",
+    "title": "Postprocessors",
+    "section": "",
+    "text": "source\n\nClipAction\n\n ClipAction (lower:Union[float,numpy.ndarray,NoneType]=None,\n             upper:Union[float,numpy.ndarray,NoneType]=None)\n\nA class to clip input values within specified bounds. If the parameters lower and upper are not specified, no clipping is performed. If the parameters are scalar values, then all elements of the input are clipped to the same bounds. If the parameters are arrays, then each element of the input is clipped to the corresponding bounds.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nlower\nUnion\nNone\n\n\n\nupper\nUnion\nNone\n\n\n\n\n\nsource\n\n\nClipAction.__call__\n\n ClipAction.__call__ (input:numpy.ndarray)\n\nClips the input array within the specified bounds.\n\n\n\n\nType\nDetails\n\n\n\n\ninput\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nRoundAction\n\n RoundAction (unit_size:Union[float,int,numpy.ndarray])\n\nA class to round input values to the nearest specified unit size. Unit size can be any decimal value like 10, 3, 1, 0.1, 0.03, etc.\n\n\n\n\nType\nDetails\n\n\n\n\nunit_size\nUnion\n\n\n\n\n\nsource\n\n\nRoundAction.__call__\n\n RoundAction.__call__ (input:numpy.ndarray)\n\nRounds the input array to the nearest specified unit size.\nExample usage of [`RoundAction`](https://opimwue.github.io/ddopnew/00_utils/postprocessors.html#roundaction). Expected result:\n[1. 2. 4. 5. 6.]\n[0.1 0.4]\n[ 0. 12. 6. 0. 0. 0. 3.]\n\ninput = np.array([1.1, 2.5, 3.5, 4.6, 5.9])\nround_action = RoundAction(1)\nprint(round_action(input))\n\ninput = np.array([0.12, 0.39])\nround_action = RoundAction(0.1)\nprint(round_action(input))\n\ninput = np.array([1.1231, 12.13, 7, 0.5, 1.4, 1.5, 1.6])\nround_action = RoundAction(3)\nprint(round_action(input))\n\n[1. 2. 4. 5. 6.]\n[0.1 0.4]\n[ 0. 12.  6.  0.  0.  0.  3.]",
+    "crumbs": [
+      "Utils",
+      "Postprocessors"
+    ]
+  },
+  {
+    "objectID": "00_utils/torch_pre_processors.html",
+    "href": "00_utils/torch_pre_processors.html",
+    "title": "Torch preprocessors",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Utils",
+      "Torch preprocessors"
+    ]
+  },
+  {
+    "objectID": "00_utils/torch_pre_processors.html#flattentimedim",
+    "href": "00_utils/torch_pre_processors.html#flattentimedim",
+    "title": "Torch preprocessors",
+    "section": "FlattenTimeDim",
+    "text": "FlattenTimeDim\n\n FlattenTimeDim (allow_2d:Optional[bool]=False)\n\nPreprocessor to flatten the time and feature dimension of the input. Used, e.g., to convert time-series data for models that cannot process a time dimension such as MLPs or Regression models.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nallow_2d\nOptional\nFalse\n\n\n\n\n\nsource\n\nFlattenTimeDim.check_input\n\n FlattenTimeDim.check_input (input:torch.Tensor)\n\nCheck that the input is a PyTorch tensor with the correct shape.\n\n\n\n\nType\nDetails\n\n\n\n\ninput\nTensor\n\n\n\n\n\nsource\n\n\nFlattenTimeDim.__call__\n\n FlattenTimeDim.__call__ (input:torch.Tensor)\n\nProcess the input tensor by keeping the batch dimension and flattening the time and feature dimensions.\n\n\n\n\nType\nDetails\n\n\n\n\ninput\nTensor\n\n\n\nReturns\nTensor",
+    "crumbs": [
+      "Utils",
+      "Torch preprocessors"
+    ]
+  },
+  {
+    "objectID": "30_experiment_functions/experiment_functions.html",
+    "href": "30_experiment_functions/experiment_functions.html",
+    "title": "Experiment functions",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Experiment functions",
+      "Experiment functions"
+    ]
+  },
+  {
+    "objectID": "30_experiment_functions/experiment_functions.html#earlystoppinghandler",
+    "href": "30_experiment_functions/experiment_functions.html#earlystoppinghandler",
+    "title": "Experiment functions",
+    "section": "EarlyStoppingHandler",
+    "text": "EarlyStoppingHandler\n\n EarlyStoppingHandler (patience:int=50, warmup:int=100, criteria:str='J',\n                       direction:str='max')\n\nClass to handle early stopping during experiments. The EarlyStoppingHandler handler calculates the average score over the last “patience” epochs and compares it to the average score over the previous “patience” epochs. Note that one epoch we define here as time in between evaluating on a validation set, for supervised learning typically one epoch is one pass through the training data. For reinforcement learning, in between each evaluation epoch there may be less than one, one, or many episodes played in the training environment.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\npatience\nint\n50\nNumber of epochs to evaluate for stopping\n\n\nwarmup\nint\n100\nHow many initial epochs to wait before evaluating\n\n\ncriteria\nstr\nJ\nWhether to use discounted rewards J or total rewards R as criteria\n\n\ndirection\nstr\nmax\nWhether reward shall be maximized or minimized\n\n\n\n\nsource\n\nEarlyStoppingHandler.add_result\n\n EarlyStoppingHandler.add_result (J:float, R:float)\n\nAdd the result of the last epoch to the history and check if the experiment should be stopped.\n\n\n\n\nType\nDetails\n\n\n\n\nJ\nfloat\nReturn (discounted rewards) of the last epoch\n\n\nR\nfloat\nTotal rewards of the last epoch\n\n\nReturns\nbool",
+    "crumbs": [
+      "Experiment functions",
+      "Experiment functions"
+    ]
+  },
+  {
+    "objectID": "30_experiment_functions/experiment_functions.html#helper-functions",
+    "href": "30_experiment_functions/experiment_functions.html#helper-functions",
+    "title": "Experiment functions",
+    "section": "Helper functions",
+    "text": "Helper functions\n\nSome functions that are needed to run an experiment\n\n\nsource\n\nsave_agent\n\n save_agent (agent:ddopnew.agents.base.BaseAgent, experiment_dir:str,\n             save_best:bool, R:float, J:float, best_R:float, best_J:float,\n             criteria:str='J')\n\nSave the agent if it has improved either R or J, depending on the criteria argument, vs. the previous epochs\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nagent\nBaseAgent\n\nAny agent inheriting from BaseAgent\n\n\nexperiment_dir\nstr\n\nDirectory to save the agent,\n\n\nsave_best\nbool\n\n\n\n\nR\nfloat\n\n\n\n\nJ\nfloat\n\n\n\n\nbest_R\nfloat\n\n\n\n\nbest_J\nfloat\n\n\n\n\ncriteria\nstr\nJ\n\n\n\n\n\nsource\n\n\nupdate_best\n\n update_best (R:float, J:float, best_R:float, best_J:float)\n\nUpdate the best total rewards R and the best discounted rewards J.\n\n\n\n\nType\nDetails\n\n\n\n\nR\nfloat\n\n\n\nJ\nfloat\n\n\n\nbest_R\nfloat\n\n\n\nbest_J\nfloat\n\n\n\n\n\nsource\n\n\nlog_info\n\n log_info (R:float, J:float, n_epochs:int, logging:Literal['wandb'],\n           mode:Literal['train','val','test'])\n\nLogs the same R, J information repeatedly for n_epoochs. E.g., to draw a straight line in wandb for algorithmes such as XGB, RF, etc. that can be comparared to the learning curves of supervised or reinforcement learning algorithms.\n\n\n\n\nType\nDetails\n\n\n\n\nR\nfloat\n\n\n\nJ\nfloat\n\n\n\nn_epochs\nint\n\n\n\nlogging\nLiteral\nonly wandb implemented so far\n\n\nmode\nLiteral\n\n\n\n\n\nsource\n\n\ncalculate_score\n\n calculate_score (dataset:List, env:ddopnew.envs.base.BaseEnvironment)\n\nCalculate the total rewards R and the discounted rewards J of a dataset.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\ndataset\nList\n\n\n\nenv\nBaseEnvironment\nAny environment inheriting from BaseEnvironment\n\n\nReturns\nTuple",
+    "crumbs": [
+      "Experiment functions",
+      "Experiment functions"
+    ]
+  },
+  {
+    "objectID": "30_experiment_functions/experiment_functions.html#experiment-functions",
+    "href": "30_experiment_functions/experiment_functions.html#experiment-functions",
+    "title": "Experiment functions",
+    "section": "Experiment functions",
+    "text": "Experiment functions\n\nFunctions to run experiments\n\n\nsource\n\nrun_experiment\n\n run_experiment (agent:ddopnew.agents.base.BaseAgent,\n                 env:ddopnew.envs.base.BaseEnvironment, n_epochs:int, earl\n                 y_stopping_handler:Optional[__main__.EarlyStoppingHandler\n                 ]=None, save_best:bool=True,\n                 performance_criterion:str='J',\n                 tracking:Optional[str]=None, results_dir:str='results',\n                 run_id:Optional[str]=None, print_freq:int=10,\n                 eval_step_info=False)\n\nRun an experiment with the given agent and environment for n_epochs. It automaticall dedects if the train mode of the agent is direct, epochs_fit or env_interaction and runs the experiment accordingly.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nagent\nBaseAgent\n\n\n\n\nenv\nBaseEnvironment\n\n\n\n\nn_epochs\nint\n\n\n\n\nearly_stopping_handler\nOptional\nNone\n\n\n\nsave_best\nbool\nTrue\n\n\n\nperformance_criterion\nstr\nJ\nother: “R”\n\n\ntracking\nOptional\nNone\nother: “wandb”\n\n\nresults_dir\nstr\nresults\n\n\n\nrun_id\nOptional\nNone\n\n\n\nprint_freq\nint\n10\n\n\n\neval_step_info\nbool\nFalse\n\n\n\n\n\n\nImportant notes on running experiments\nTraining mode:\n\nAgents have either a training mode direct_fit or epochs_fit or env_interaction. direct_fit means that agents are called with a single call to the fit method, providing the full X and Y dataset. epochs_fit means that agents are training iteratively via epochs. It is assumed that they then have access to the dataloader.\n\nTrain, val, test mode:\n\nThe function always sets the agent and environment to the approproate dataset mode (and thereofore indirectly the dataloader via then environment).\n\nEarly stopping:\n\nCan be optionally applied for epochs_fit and env_interaction agents.\n\nSave best agent:\n\nThe save_agent() functions, given the save_bestparam is True, will save the best agent based on the validation score.\nAt test time at a later point, one can then load the best agent and evaluate it on the test set (not done automatically by this function).\n\nLogging:\n\nBy setting logging to \"wandb\" the function will log J and R to wandb.\n\n\nsource\n\n\ntest_agent\n\n test_agent (agent:ddopnew.agents.base.BaseAgent,\n             env:ddopnew.envs.base.BaseEnvironment, return_dataset=False,\n             tracking=None, eval_step_info=False)\n\nTests the agent on the environment for a single episode\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nagent\nBaseAgent\n\n\n\n\nenv\nBaseEnvironment\n\n\n\n\nreturn_dataset\nbool\nFalse\n\n\n\ntracking\nNoneType\nNone\nother: “wandb”,\n\n\neval_step_info\nbool\nFalse\n\n\n\n\n\nsource\n\n\nrun_test_episode\n\n run_test_episode (env:ddopnew.envs.base.BaseEnvironment,\n                   agent:ddopnew.agents.base.BaseAgent,\n                   eval_step_info:bool=False)\n\nRuns an episode to test the agent’s performance. It assumes, that agent and environment are initialized, in test/val mode and have done reset.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenv\nBaseEnvironment\n\nAny environment inheriting from BaseEnvironment\n\n\nagent\nBaseAgent\n\nAny agent inheriting from BaseAgent\n\n\neval_step_info\nbool\nFalse\nPrint step info during evaluation\n\n\n\nUsage example for test_agent():\n\nfrom ddopnew.envs.inventory import NewsvendorEnv\nfrom ddopnew.dataloaders.tabular import XYDataLoader\nfrom ddopnew.agents.basic import RandomAgent\n\n\nval_index_start = 80 #90_000\ntest_index_start = 90 #100_000\n\nX = np.random.rand(100, 2)\nY = np.random.rand(100, 1)\n\ndataloader = XYDataLoader(X, Y, val_index_start, test_index_start)\n\nenvironment = NewsvendorEnv(\n    dataloader = dataloader,\n    underage_cost = 0.42857,\n    overage_cost = 1.0,\n    gamma = 0.999,\n    horizon_train = 365,\n)\n\nagent = RandomAgent(environment.mdp_info)\n\nenvironment.test()\n\nR, J = test_agent(agent, environment)\n\nprint(f\"R: {R}, J: {J}\")\n\nR: -3.4385899883545763, J: -3.423149989490116",
+    "crumbs": [
+      "Experiment functions",
+      "Experiment functions"
+    ]
+  },
+  {
+    "objectID": "60_approximators/approximators.html",
+    "href": "60_approximators/approximators.html",
+    "title": "Approximators",
+    "section": "",
+    "text": "import logging\nlogging_level = logging.DEBUG\n\n\nsource\n\nLinearModel\n\n LinearModel (input_size:int, output_size:int, relu_output:bool=False)\n\nLinear regression model\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_size\nint\n\nnumber of features\n\n\noutput_size\nint\n\nnumber of outputs/actions\n\n\nrelu_output\nbool\nFalse\nwhether to apply ReLU activation to the output\n\n\n\n\nsource\n\n\nMLP\n\n MLP (input_size:int, output_size:int, hidden_layers:list,\n      drop_prob:float=0.0, batch_norm:bool=False, relu_output:bool=False)\n\nMultilayer perceptron model\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ninput_size\nint\n\nnumber of features\n\n\noutput_size\nint\n\nnumber of outputs/actions\n\n\nhidden_layers\nlist\n\nlist of number of neurons in each hidden layer\n\n\ndrop_prob\nfloat\n0.0\ndropout probability\n\n\nbatch_norm\nbool\nFalse\nwhether to apply batch normalization\n\n\nrelu_output\nbool\nFalse\nwhether to apply ReLU activation to the output",
+    "crumbs": [
+      "Approximators",
+      "Approximators"
+    ]
+  },
+  {
+    "objectID": "21_envs_inventory/single_period_envs.html",
+    "href": "21_envs_inventory/single_period_envs.html",
+    "title": "Single period inventory environments",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Environments",
+      "Inventory environments",
+      "Single period inventory environments"
+    ]
+  },
+  {
+    "objectID": "21_envs_inventory/single_period_envs.html#baseinventoryenv",
+    "href": "21_envs_inventory/single_period_envs.html#baseinventoryenv",
+    "title": "Single period inventory environments",
+    "section": "BaseInventoryEnv",
+    "text": "BaseInventoryEnv\n\n BaseInventoryEnv (mdp_info:ddopnew.utils.MDPInfo)\n\nBase class for inventory management environments. This class inherits from BaseEnvironment.\n\n\n\n\nType\nDetails\n\n\n\n\nmdp_info\nMDPInfo\n\n\n\nReturns\nNone\n\n\n\n\n\nsource\n\nBaseInventoryEnv.set_observation_space\n\n BaseInventoryEnv.set_observation_space (shape:tuple,\n                                         low:Union[numpy.ndarray,float]=-\n                                         inf, high:Union[numpy.ndarray,flo\n                                         at]=inf,\n                                         samples_dim_included=True)\n\nSet the observation space of the environment. This is a standard function for simple observation spaces. For more complex observation spaces, this function should be overwritten. Note that it is assumped that the first dimension is n_samples that is not relevant for the observation space.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nshape\ntuple\n\nshape of the dataloader features\n\n\nlow\nUnion\n-inf\nlower bound of the observation space\n\n\nhigh\nUnion\ninf\nupper bound of the observation space\n\n\nsamples_dim_included\nbool\nTrue\nwhether the first dimension of the shape input is the number of samples\n\n\nReturns\nNone\n\n\n\n\n\n\nsource\n\n\nBaseInventoryEnv.set_action_space\n\n BaseInventoryEnv.set_action_space (shape:tuple,\n                                    low:Union[numpy.ndarray,float]=-inf,\n                                    high:Union[numpy.ndarray,float]=inf,\n                                    samples_dim_included=True)\n\nSet the action space of the environment. This is a standard function for simple action spaces. For more complex action spaces, this function should be overwritten. Note that it is assumped that the first dimension is n_samples that is not relevant for the action space.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nshape\ntuple\n\nshape of the dataloader target\n\n\nlow\nUnion\n-inf\nlower bound of the observation space\n\n\nhigh\nUnion\ninf\nupper bound of the observation space\n\n\nsamples_dim_included\nbool\nTrue\nwhether the first dimension of the shape input is the number of samples\n\n\nReturns\nNone\n\n\n\n\n\n\nsource\n\n\nBaseInventoryEnv.get_observation\n\n BaseInventoryEnv.get_observation ()\n\nReturn the current observation. This function is for the simple case where the observation is only an x,y pair. For more complex observations, this function should be overwritten.\n\nsource",
+    "crumbs": [
+      "Environments",
+      "Inventory environments",
+      "Single period inventory environments"
+    ]
+  },
+  {
+    "objectID": "21_envs_inventory/single_period_envs.html#newsvendorenv",
+    "href": "21_envs_inventory/single_period_envs.html#newsvendorenv",
+    "title": "Single period inventory environments",
+    "section": "NewsvendorEnv",
+    "text": "NewsvendorEnv\n\n NewsvendorEnv\n                (underage_cost:Union[numpy.ndarray,ddopnew.utils.Parameter\n                ,int,float]=1, overage_cost:Union[numpy.ndarray,ddopnew.ut\n                ils.Parameter,int,float]=1, q_bound_low:Union[numpy.ndarra\n                y,ddopnew.utils.Parameter,int,float]=0, q_bound_high:Union\n                [numpy.ndarray,ddopnew.utils.Parameter,int,float]=inf,\n                dataloader:ddopnew.dataloaders.base.BaseDataLoader=None,\n                num_SKUs:int=None, gamma:float=1,\n                horizon_train:Union[str,int]=100)\n\nClass implementing the Newsvendor problem, working for the single- and multi-item case. If underage_cost and overage_cost are scalars and there are multiple SKUs, then the same cost is used for all SKUs. If underage_cost and overage_cost are arrays, then they must have the same length as the number of SKUs. Num_SKUs can be set as parameter or inferred from the DataLoader.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nunderage_cost\nUnion\n1\nunderage cost per unit\n\n\noverage_cost\nUnion\n1\noverage cost per unit\n\n\nq_bound_low\nUnion\n0\nlower bound of the order quantity\n\n\nq_bound_high\nUnion\ninf\nupper bound of the order quantity\n\n\ndataloader\nBaseDataLoader\nNone\ndataloader\n\n\nnum_SKUs\nint\nNone\nif None it will be inferred from the DataLoader\n\n\ngamma\nfloat\n1\ndiscount factor\n\n\nhorizon_train\nUnion\n100\nif “use_all_data” then horizon is inferred from the DataLoader\n\n\nReturns\nNone\n\n\n\n\n\n\nsource\n\nNewsvendorEnv.step\n\n NewsvendorEnv.step (action:numpy.ndarray)\n\nStep function implementing the Newsvendor logic. Note that the dataloader will return an observation and a demad, which will be relevant in the next period. The observation will be returned directly, while the demand will be temporarily stored under self.demand and used in the next step.\n\n\n\n\nType\nDetails\n\n\n\n\naction\nndarray\norder quantity\n\n\nReturns\nTuple\n\n\n\n\n\nsource\n\n\nNewsvendorEnv.reset\n\n NewsvendorEnv.reset (start_index:int|str=None)\n\nReset function for the Newsvendor problem. It will return the first observation and demand. For val and test modes, it will by default reset to 0, while for the train mode it depends on the paramter “horizon_train” whether a random point in the training data is selected or 0\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nstart_index\nint | str\nNone\nindex to start from\n\n\nReturns\nTuple\n\n\n\n\n\nExample usage of [`NewsvendorEnv`](https://opimwue.github.io/ddopnew/21_envs_inventory/single_period_envs.html#newsvendorenv) with a distributional dataloader:\n\nfrom ddopnew.dataloaders.distribution import NormalDistributionDataLoader\n\ndef run_test_loop(env):\n    truncated = False\n    while not truncated:\n        action = env.action_space.sample()\n        obs, reward, terminated, truncated, info = env.step(action)\n        print(\"##### STEP: \", env.index, \"#####\")\n        print(\"reward:\", reward)\n        print(\"info:\", info)\n        print(\"next observation:\", obs)\n        print(\"truncated:\", truncated)\n\ndataloader = NormalDistributionDataLoader(mean=[4, 3], std=[1, 2], num_units=2)\n\ntest_env = NewsvendorEnv(underage_cost=1, overage_cost=2, dataloader=dataloader, horizon_train=3)\n\nobs, truncated = test_env.reset(start_index=0)\nprint(\"##### RESET #####\")\n\nrun_test_loop(test_env)\n\n##### RESET #####\n##### STEP:  1 #####\nreward: -8.445923801548425\ninfo: {'demand': array([4.6482781 , 2.94383857]), 'action': array([-0.80747056, -0.04633657], dtype=float32), 'cost_per_SKU': array([5.45574866, 2.99017514])}\nnext observation: None\ntruncated: False\n##### STEP:  2 #####\nreward: -8.23896669533108\ninfo: {'demand': array([4.97902458, 3.67248422]), 'action': array([-0.46593934,  0.87848145], dtype=float32), 'cost_per_SKU': array([5.44496393, 2.79400277])}\nnext observation: None\ntruncated: False\n##### STEP:  3 #####\nreward: -4.8271334179314636\ninfo: {'demand': array([4.22382948, 0.62910768]), 'action': array([ 0.3064338 , -0.28063005], dtype=float32), 'cost_per_SKU': array([3.91739569, 0.90973773])}\nnext observation: None\ntruncated: True\n\n\nExample usage of [`NewsvendorEnv`](https://opimwue.github.io/ddopnew/21_envs_inventory/single_period_envs.html#newsvendorenv) using a fixed dataset:\n\nfrom sklearn.datasets import make_regression\nfrom sklearn.preprocessing import MinMaxScaler\n\nfrom ddopnew.dataloaders.tabular import XYDataLoader\n\n# create a simple dataset bounded between 0 and 1.\n# We just scale all the data, pretending that it is the demand.\n# When using real data, one should only fit the scaler on the training data\nX, Y = make_regression(n_samples=8, n_features=2, n_targets=2, noise=0.1, random_state=42)\nscaler = MinMaxScaler()\nX = scaler.fit_transform(X)\nY = scaler.fit_transform(Y)\n\ndataloader = XYDataLoader(X, Y, val_index_start = 4, test_index_start = 6)\ntest_env = NewsvendorEnv(underage_cost=Parameter(np.array([1,1]), shape = (2,)), overage_cost=Parameter(np.array([0.5,0.5]), shape = (2,)), dataloader=dataloader, horizon_train=\"use_all_data\")\n\nobs, truncated= test_env.reset(start_index=0)\nprint(\"#################### RESET ####################\")\n\nprint(\"#################### RUN IN TRAIN MODE ####################\")\nrun_test_loop(test_env)\n\nprint(\"#################### RUN IN VAL MODE ####################\")\ntest_env.val()\nrun_test_loop(test_env)\n\nprint(\"#################### RUN IN TEST MODE ####################\")\ntest_env.test()\nrun_test_loop(test_env)\n\nprint(\"#################### RUN IN TRAIN MODE AGAIN ####################\")\ntest_env.train()\nrun_test_loop(test_env)\n\n#################### RESET ####################\n#################### RUN IN TRAIN MODE ####################\n##### STEP:  1 #####\nreward: -0.7219971136655106\ninfo: {'demand': array([0.41801109, 0.41814421]), 'action': array([ 0.3170402 , -0.20288202], dtype=float32), 'cost_per_SKU': array([0.10097088, 0.62102623])}\nnext observation: [0.51654708 0.67238019]\ntruncated: False\n##### STEP:  2 #####\nreward: -1.9834893520396508\ninfo: {'demand': array([0.61617324, 0.52211535]), 'action': array([ 0.7277504, -1.4055854], dtype=float32), 'cost_per_SKU': array([0.05578859, 1.92770076])}\nnext observation: [0.71467365 0.37996181]\ntruncated: False\n##### STEP:  3 #####\nreward: -2.102909082155502\ninfo: {'demand': array([0.45242345, 0.60924132]), 'action': array([ 0.18772359, -1.2289679 ], dtype=float32), 'cost_per_SKU': array([0.26469986, 1.83820922])}\nnext observation: [0.78011439 1.        ]\ntruncated: False\n##### STEP:  4 #####\nreward: -1.6162237506105328\ninfo: {'demand': array([1.        , 0.88968748]), 'action': array([ 1.0380907, -0.7074909], dtype=float32), 'cost_per_SKU': array([0.01904535, 1.5971784 ])}\nnext observation: None\ntruncated: True\n#################### RUN IN VAL MODE ####################\n##### STEP:  1 #####\nreward: -0.9987399122375067\ninfo: {'demand': array([0.        , 0.16760013]), 'action': array([1.3102882 , 0.85479176], dtype=float32), 'cost_per_SKU': array([0.6551441 , 0.34359582])}\nnext observation: [0.         0.59527916]\ntruncated: False\n##### STEP:  2 #####\nreward: -0.6125494651731784\ninfo: {'demand': array([0.33549548, 0.        ]), 'action': array([ 1.179492 , -0.1905512], dtype=float32), 'cost_per_SKU': array([0.42199826, 0.19055121])}\nnext observation: None\ntruncated: True\n#################### RUN IN TEST MODE ####################\n##### STEP:  1 #####\nreward: -1.3106180985737999\ninfo: {'demand': array([0.3316407 , 0.33063685]), 'action': array([-0.6215832 , -0.02675733], dtype=float32), 'cost_per_SKU': array([0.95322392, 0.35739418])}\nnext observation: [1.         0.71807281]\ntruncated: False\n##### STEP:  2 #####\nreward: -2.967550127486687\ninfo: {'demand': array([0.8554925, 1.       ]), 'action': array([-0.5865524 , -0.52550524], dtype=float32), 'cost_per_SKU': array([1.44204488, 1.52550524])}\nnext observation: None\ntruncated: True\n#################### RUN IN TRAIN MODE AGAIN ####################\n##### STEP:  1 #####\nreward: -1.702847482403685\ninfo: {'demand': array([0.41801109, 0.41814421]), 'action': array([ 0.26002872, -1.1267209 ], dtype=float32), 'cost_per_SKU': array([0.15798237, 1.54486511])}\nnext observation: [0.51654708 0.67238019]\ntruncated: False\n##### STEP:  2 #####\nreward: -2.319479739567036\ninfo: {'demand': array([0.61617324, 0.52211535]), 'action': array([-0.7868578 , -0.39433336], dtype=float32), 'cost_per_SKU': array([1.40303102, 0.91644872])}\nnext observation: [0.71467365 0.37996181]\ntruncated: False\n##### STEP:  3 #####\nreward: -1.5551165176774866\ninfo: {'demand': array([0.45242345, 0.60924132]), 'action': array([ 0.65812343, -0.8430252 ], dtype=float32), 'cost_per_SKU': array([0.10284999, 1.45226653])}\nnext observation: [0.78011439 1.        ]\ntruncated: False\n##### STEP:  4 #####\nreward: -3.1078579406930826\ninfo: {'demand': array([1.        , 0.88968748]), 'action': array([-1.5988121 ,  0.38064164], dtype=float32), 'cost_per_SKU': array([2.5988121 , 0.50904584])}\nnext observation: None\ntruncated: True\n\n\n\n# #| export\n# class NewsvendorVariableSLEnv(NewsvendorEnv, ABC):\n#     \"\"\"\n\n#     \"\"\"\n#     def __init__(self,\n#         underage_cost: Union[np.ndarray, Parameter] = np.array([1]),\n#         overage_cost: Union[np.ndarray, Parameter] = np.array([1]),\n#         q_bound_low: Union[np.ndarray, Parameter] = np.array([0]),\n#         q_bound_high: Union[np.ndarray, Parameter] = np.array([np.inf]),\n#         dataloader: BaseDataLoader = None,\n#         gamma: float = 1,\n#         horizon: int = 100,\n\n#         low_sl: np.ndarray = np.array([0.1]),\n#         high_sl: np.ndarray = np.array([0.9]),\n\n#     ) -&gt; None:\n    \n#         super().__init__( \n#             underage_cost=underage_cost,\n#             overage_cost=overage_cost,\n#             q_bound_low=q_bound_low,\n#             q_bound_high=q_bound_high,\n#             dataloader=dataloader,\n#             gamma=gamma,\n#             horizon=horizon,\n#         )\n\n#         self.low_sl = set_env_parameter(low_sl, self.num_SKUs)\n#         self.high_sl = set_env_parameter(high_sl, self.num_SKUs)\n    \n#     def set_observation_space(self,\n#                             shape: tuple,\n#                             low: Union[np.ndarray, float] = -np.inf,\n#                             high: Union[np.ndarray, float] = np.inf) -&gt; None:\n        \n#         '''\n#         Set the observation space of the environment.\n#         '''\n\n#         ### THIS MAKES NO SENSE:\n\n#         # if shape is not None:\n#         #     if not isinstance(shape, tuple):\n#         #         raise ValueError(\"Shape must be a tuple.\")\n            \n#         #     shape = shape[1:]\n        \n#         #     self.observation_space = gym.spaces.Dict({\n#         #         'X': gym.spaces.Box(low=low, high=high, shape=shape, dtype=np.float32),\n#         #         'sl': gym.spaces.Box(low=0, high=1, shape=(self.num_SKUs,), dtype=np.float32)\n#         #     })\n#         # else:\n#         #     self.observation_space = gym.spaces.Dict({\n#         #         'sl': gym.spaces.Box(low=0, high=1, shape=(self.num_SKUs,), dtype=np.float32)\n#         #     })\n\n#     def get_observation(self):\n#         \"\"\"\n#         Return the current observation.\n#         \"\"\"\n        \n#         X_item, Y_item = self.dataloader[self.index]\n\n#         underage_cost, overage_cost, sl = self.draw_service_level()\n\n#         self.underage_cost.set_value(underage_cost, (self.num_SKUs,))\n#         self.overage_cost.set_value(overage_cost, (self.num_SKUs,))\n\n#         if X_item is not None:\n#             obs = {'X': X_item, 'sl': sl}\n#         else:\n#             obs = {'sl': sl}\n\n#         return obs, Y_item\n    \n#     def draw_service_level(self):\n        \n#         sl = np.random.uniform(self.low_sl, self.high_sl, self.num_SKUs)\n\n#         overage_cost = np.ones_like(sl)\n#         underage_cost = np.ones_like(sl)\n\n#         # # Calculate underage_cost where sl &gt;= 0.5\n#         underage_cost = np.where(sl &lt; 0.5, sl / (1 - sl), underage_cost)\n        \n#         # Calculate overage_cost where sl &lt; 0.5\n#         overage_cost = np.where(sl &gt;= 0.5, 1 / sl -1, overage_cost)\n        \n#         return underage_cost, overage_cost, sl\n\n\n# test_env = NewsvendorVariableSLEnv(underage_cost=Parameter(np.array([1,1]), shape = (2,)), overage_cost=Parameter(np.array([0.5,0.5]), shape = (2,)), dataloader=dataloader, horizon=3)\n\n# print(test_env.observation_space)\n# print(test_env.observation_space.sample())\n\n# obs = test_env.reset(start_index=0)\n# print(\"##### RESET #####\")\n# print(\"obs:\", obs)\n\n# truncated = False\n# while not truncated:\n#     action = test_env.action_space.sample()\n#     obs, reward, terminated, truncated, info = test_env.step(action)\n#     print(\"##### STEP: \", test_env.index, \"#####\")\n#     print(\"reward:\", reward)\n#     print(\"info:\", info)\n#     print(\"obs:\", obs)\n#     print(\"truncated:\", truncated)\n\n\nSimple Example with synthetic data:\n\n# from sklearn.datasets import make_regression\n# from sklearn.preprocessing import MinMaxScaler\n\n# from ddopnew.dataloaders.tabular import XYDataLoader\n\n# # create a simple dataset bounded between 0 and 1\n# X, Y = make_regression(n_samples=100, n_features=2, n_targets=2, noise=0.1)\n# scaler = MinMaxScaler()\n# X = scaler.fit_transform(X)\n# Y = scaler.fit_transform(Y)\n\n# dataloader = XYDataLoader(X, Y)\n# test_env = NewsvendorVariableSLEnv(underage_cost=Parameter(np.array([1,1]), shape = (2,)), overage_cost=Parameter(np.array([0.5,0.5]), shape = (2,)), dataloader=dataloader, horizon=len(dataloader))\n\n# print(test_env.observation_space)\n# print(test_env.observation_space.sample())\n\n# obs = test_env.reset(start_index=0)\n# print(\"##### RESET #####\")\n# print(\"obs:\", obs)\n\n# truncated = False\n# while not truncated:\n#     action = test_env.action_space.sample()\n#     obs, reward, terminated, truncated, info = test_env.step(action)\n#     print(\"##### STEP: \", test_env.index, \"#####\")\n#     print(\"reward:\", reward)\n#     print(\"info:\", info)\n#     print(\"obs:\", obs)\n#     print(\"truncated:\", truncated)",
+    "crumbs": [
+      "Environments",
+      "Inventory environments",
+      "Single period inventory environments"
+    ]
+  },
+  {
+    "objectID": "80_datasets/datasets.html",
+    "href": "80_datasets/datasets.html",
+    "title": "Dataset loader",
+    "section": "",
+    "text": "We provide a range of synthetic and real-world datasets to enable reproducible research. Typically we have multiple datasets of the same dataset type (e.g., 16 multivariate datasets following an arma(10,10) process). The datasets are available in the releases of this repository. Below are automated functions that help to easily download those datasets. Three steps to load datasets:\n\nStep 1: Create a DatasetLoader object: datasetloader = DatasetLoader()\nStep 2: Check available dataset types: datasetloader.show_dataset_types(show_num_datasets_per_type=True)\nStep 3: Load a dataset: data = datasetloader.load_dataset(\"arma_10_10\", 1)) where the first string argument is the name of the dataset type and the second integer argument is the dataset number.",
+    "crumbs": [
+      "Datasets",
+      "Dataset loader"
+    ]
+  },
+  {
+    "objectID": "80_datasets/datasets.html#info",
+    "href": "80_datasets/datasets.html#info",
+    "title": "Dataset loader",
+    "section": "",
+    "text": "We provide a range of synthetic and real-world datasets to enable reproducible research. Typically we have multiple datasets of the same dataset type (e.g., 16 multivariate datasets following an arma(10,10) process). The datasets are available in the releases of this repository. Below are automated functions that help to easily download those datasets. Three steps to load datasets:\n\nStep 1: Create a DatasetLoader object: datasetloader = DatasetLoader()\nStep 2: Check available dataset types: datasetloader.show_dataset_types(show_num_datasets_per_type=True)\nStep 3: Load a dataset: data = datasetloader.load_dataset(\"arma_10_10\", 1)) where the first string argument is the name of the dataset type and the second integer argument is the dataset number.",
+    "crumbs": [
+      "Datasets",
+      "Dataset loader"
+    ]
+  },
+  {
+    "objectID": "80_datasets/datasets.html#helper-functions-to-load-datasets",
+    "href": "80_datasets/datasets.html#helper-functions-to-load-datasets",
+    "title": "Dataset loader",
+    "section": "Helper functions to load datasets",
+    "text": "Helper functions to load datasets\n\nsource\n\nload_data_from_directory\n\n load_data_from_directory (dir)\n\n\nsource\n\n\nunzip_file\n\n unzip_file (zip_file_path, output_dir, delete_zip_file=True)\n\n\nsource\n\n\ndownload_file_from_github\n\n download_file_from_github (url, output_path)\n\n\nsource\n\n\nget_asset_url\n\n get_asset_url (dataset_type, dataset_number, version='latest')\n\n\nsource\n\n\nget_dataset_url\n\n get_dataset_url (dataset_type, dataset_number, release_tag)\n\n\nsource\n\n\nget_release_tag\n\n get_release_tag (dataset_type, version)\n\n\nsource\n\n\nget_all_release_tags\n\n get_all_release_tags ()",
+    "crumbs": [
+      "Datasets",
+      "Dataset loader"
+    ]
+  },
+  {
+    "objectID": "80_datasets/datasets.html#dataset-loader-class",
+    "href": "80_datasets/datasets.html#dataset-loader-class",
+    "title": "Dataset loader",
+    "section": "Dataset Loader class",
+    "text": "Dataset Loader class\n\nsource",
+    "crumbs": [
+      "Datasets",
+      "Dataset loader"
+    ]
+  },
+  {
+    "objectID": "80_datasets/datasets.html#datasetloader",
+    "href": "80_datasets/datasets.html#datasetloader",
+    "title": "Dataset loader",
+    "section": "DatasetLoader",
+    "text": "DatasetLoader\n\n DatasetLoader ()\n\nClass to load datasets from the GitHub repository.\n\nsource\n\nDatasetLoader.show_dataset_types\n\n DatasetLoader.show_dataset_types (show_num_datasets_per_type=False)\n\nShow an overview of all dataset types available in the repository.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nshow_num_datasets_per_type\nbool\nFalse\nWhether to show the number of datasets per type\n\n\n\n\nsource\n\n\nDatasetLoader.load_dataset\n\n DatasetLoader.load_dataset (dataset_type:str, dataset_number:int,\n                             overwrite:bool=False, version:str='latest')\n\nLoad a dataset from the GitHub repository.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndataset_type\nstr\n\n\n\n\ndataset_number\nint\n\n\n\n\noverwrite\nbool\nFalse\nWhether to overwrite the dataset if it already exists\n\n\nversion\nstr\nlatest\nWhich version of the dataset to load, “latest” or a specific version\n\n\n\nExample usage:\n\ndatasetloader = DatasetLoader()\ndatasetloader.show_dataset_types()\n\nUnivariate datasets:\n\nMultivariate datasets:\narma_10_10\narma_2_2\nar_1\n\n\n\ndownload_test = False\n\nif download_test:\n    data = datasetloader.load_dataset(\"arma_10_10\", 1)\n    X = data[0]\n    y = data[1]\n    X.shape, y.shape\n\nWARNING:root:Dataset arma_10_10_dataset_1 has already been downloaded.\nWARNING:root:Keeping existing dataset.",
+    "crumbs": [
+      "Datasets",
+      "Dataset loader"
+    ]
+  },
+  {
+    "objectID": "00_utils/loss_functions.html",
+    "href": "00_utils/loss_functions.html",
+    "title": "Loss functions",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Utils",
+      "Loss functions"
+    ]
+  },
+  {
+    "objectID": "00_utils/loss_functions.html#pinball_loss",
+    "href": "00_utils/loss_functions.html#pinball_loss",
+    "title": "Loss functions",
+    "section": "pinball_loss",
+    "text": "pinball_loss\n\n pinball_loss (Y_true:numpy.ndarray, Y_pred:numpy.ndarray,\n               underage_cost:ddopnew.utils.Parameter|numpy.ndarray,\n               overage_cost:ddopnew.utils.Parameter|numpy.ndarray)\n\nPinball loss calculating the cost of underestimating and overestimating the target value based on specific underage and overage costs. Used to evaulate the Newsvendor cost.\n\n\n\n\nType\nDetails\n\n\n\n\nY_true\nndarray\n\n\n\nY_pred\nndarray\n\n\n\nunderage_cost\nddopnew.utils.Parameter | numpy.ndarray\n\n\n\noverage_cost\nddopnew.utils.Parameter | numpy.ndarray\n\n\n\nReturns\nndarray\nreturns the cost per observation\n\n\n\n\nsource",
+    "crumbs": [
+      "Utils",
+      "Loss functions"
+    ]
+  },
+  {
+    "objectID": "00_utils/loss_functions.html#quantile_loss",
+    "href": "00_utils/loss_functions.html#quantile_loss",
+    "title": "Loss functions",
+    "section": "quantile_loss",
+    "text": "quantile_loss\n\n quantile_loss (Y_true:numpy.ndarray, Y_pred:numpy.ndarray,\n                quantile:Union[float,ddopnew.utils.Parameter])\n\nSimilar evaluation function to the pinball loss, but with the quantile of range [0, 1] as a parameter instead of SKU-specific cost levels for underage and overage.\n\n\n\n\nType\nDetails\n\n\n\n\nY_true\nndarray\n\n\n\nY_pred\nndarray\n\n\n\nquantile\nUnion\n\n\n\nReturns\nndarray\nreturns the cost per observation",
+    "crumbs": [
+      "Utils",
+      "Loss functions"
+    ]
+  },
+  {
+    "objectID": "00_utils/torch_loss_functions.html",
+    "href": "00_utils/torch_loss_functions.html",
+    "title": "Torch loss functions",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Utils",
+      "Torch loss functions"
+    ]
+  },
+  {
+    "objectID": "00_utils/torch_loss_functions.html#torchquantileloss",
+    "href": "00_utils/torch_loss_functions.html#torchquantileloss",
+    "title": "Torch loss functions",
+    "section": "TorchQuantileLoss",
+    "text": "TorchQuantileLoss\n\n TorchQuantileLoss (reduction:str='mean')\n\nImplmentation of the quantile loss in Pytorch. Unlike the Numpy-based implementation [`quantile_loss`](https://opimwue.github.io/ddopnew/00_utils/torch_loss_functions.html#quantile_loss) in the loss_functions module, this implementation this implementation reduces the results to a scalar value using the specified reduction method. This class is used to train Pytorch models using the quantile loss.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nreduction\nstr\nmean\n\n\n\nReturns\nNone\n\n\n\n\n\n\nsource\n\nTorchQuantileLoss.forward\n\n TorchQuantileLoss.forward (input:torch.Tensor, target:torch.Tensor,\n                            quantile:ddopnew.utils.Parameter|numpy.ndarray\n                            )\n\nForward pass of the quantile loss function.\n\n\n\n\nType\nDetails\n\n\n\n\ninput\nTensor\n\n\n\ntarget\nTensor\n\n\n\nquantile\nddopnew.utils.Parameter | numpy.ndarray\n\n\n\nReturns\nTensor",
+    "crumbs": [
+      "Utils",
+      "Torch loss functions"
+    ]
+  },
+  {
+    "objectID": "00_utils/utils.html",
+    "href": "00_utils/utils.html",
+    "title": "General utils",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Utils",
+      "General utils"
+    ]
+  },
+  {
+    "objectID": "00_utils/utils.html#check_parameter_types",
+    "href": "00_utils/utils.html#check_parameter_types",
+    "title": "General utils",
+    "section": "check_parameter_types",
+    "text": "check_parameter_types\n\n check_parameter_types (*args, parameter_type=&lt;class 'numpy.ndarray'&gt;)\n\nChecks if each argument in args is of the specified type, defaulting to np.ndarray.\nExample usage for the check_parameter_types function.\n\na = np.array([1, 2, 3])\nb = [1, 2, 3]\n\ntry:\n    check_parameter_types(a, b)\nexcept TypeError as e:\n    print(e)\n\nArgument 2 of 2 is of type list, expected ndarray\n\n\n\nsource",
+    "crumbs": [
+      "Utils",
+      "General utils"
+    ]
+  },
+  {
+    "objectID": "00_utils/utils.html#parameter",
+    "href": "00_utils/utils.html#parameter",
+    "title": "General utils",
+    "section": "Parameter",
+    "text": "Parameter\n\n Parameter (value:int|float|list[int]|list[float]|numpy.ndarray,\n            min_value:int|float|list[int]|list[float]|numpy.ndarray=None,\n            max_value:int|float|list[int]|list[float]|numpy.ndarray=None,\n            shape:tuple[int]=(1,))\n\nSimple class to handle parameters in the environment. The advantage of this class is that it can be used to set parameters that may change over time and accessed by multiple objects such as the environment, agent or dataloaders.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nvalue\nint | float | list[int] | list[float] | numpy.ndarray\n\nthe value of the parameter\n\n\nmin_value\nint | float | list[int] | list[float] | numpy.ndarray\nNone\nthe minimum value of the parameter\n\n\nmax_value\nint | float | list[int] | list[float] | numpy.ndarray\nNone\nthe maximum value of the parameter\n\n\nshape\ntuple\n(1,)\nthe shape of the parameter\n\n\n\n\nsource\n\nParameter.__call__\n\n Parameter.__call__ ()\n\nReturns the parameter value. Alternative to get_value().\n\nsource\n\n\nParameter.get_value\n\n Parameter.get_value ()\n\nReturns the parameter value.\n\nsource\n\n\nParameter.set_value\n\n Parameter.set_value\n                      (value:Union[int,float,List[int],List[float],numpy.n\n                      darray], shape:Tuple[int]=(1,))\n\n*Set the value of the parameter. The value can be a scalar, list or numpy array. The shape of the value must be the same as the shape of the parameter.\nAll values, including scalars, are converted to numpy arrays. If the value is a scalar, it is reshaped to the shape of the parameter. If the value is a list or numpy array, it must have the same shape as the parameter. If the value is a scalar, it is reshaped to the shape of the parameter.\nOptionally, the value can be clipped to a minimum and maximum value.*\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nvalue\nUnion\n\nthe value of the parameter\n\n\nshape\nTuple\n(1,)\nthe shape of the parameter\n\n\n\n\nsource\n\n\nParameter.shape\n\n Parameter.shape ()\n\nReturns: The shape of the table of parameters.\n\nsource\n\n\nParameter.size\n\n Parameter.size ()\n\nReturns: The size of the table of parameters.\nExample usage for the Parameter class:\n\noverage_cost = Parameter(1) # integer\nunderage_cost = Parameter(2.13) # float\nordering_cost = Parameter([2]*5, shape=(5,)) # list\nholding_cost = Parameter(np.array([0,1]), shape=(2,)) # numpy array\n\nprint(overage_cost.get_value())\nprint(underage_cost.get_value())\nprint(ordering_cost.get_value())\nprint(holding_cost.get_value())\n\n[1]\n[2.13]\n[2 2 2 2 2]\n[0 1]\n\n\n\nsource",
+    "crumbs": [
+      "Utils",
+      "General utils"
+    ]
+  },
+  {
+    "objectID": "00_utils/utils.html#mdpinfo",
+    "href": "00_utils/utils.html#mdpinfo",
+    "title": "General utils",
+    "section": "MDPInfo",
+    "text": "MDPInfo\n\n MDPInfo (observation_space:gymnasium.spaces.space.Space,\n          action_space:gymnasium.spaces.space.Space, gamma:float,\n          horizon:int, dt:float=0.1, backend:Literal['numpy']='numpy')\n\n*This class is used to store the information of the environment. It is based on MushroomRL (https://github.com/MushroomRL). It can be accessed by agents that need the information of the environment, such as the state and action spaces.\nKey difference with MushroomRL is that the state and action spaces are gymnasium spaces.*\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nobservation_space\nSpace\n\n\n\n\naction_space\nSpace\n\n\n\n\ngamma\nfloat\n\n\n\n\nhorizon\nint\n\n\n\n\ndt\nfloat\n0.1\n\n\n\nbackend\nLiteral\nnumpy\nCurrently only numpy is supported\n\n\nReturns\nNone\n\n\n\n\n\n\nsource",
+    "crumbs": [
+      "Utils",
+      "General utils"
+    ]
+  },
+  {
+    "objectID": "00_utils/utils.html#datasetwrapper",
+    "href": "00_utils/utils.html#datasetwrapper",
+    "title": "General utils",
+    "section": "DatasetWrapper",
+    "text": "DatasetWrapper\n\n DatasetWrapper (dataloader:ddopnew.dataloaders.base.BaseDataLoader)\n\nThis class is used to wrap a Pytorch Dataset around the ddopnew dataloader to enable the usage of the Pytorch Dataloader during training. This way, agents that are trained using Pytorch without interacting with the environment can directly train on the data generated by the dataloader.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\ndataloader\nBaseDataLoader\nAny dataloader that inherits from BaseDataLoader\n\n\n\n\nsource\n\nDatasetWrapper.__getitem__\n\n DatasetWrapper.__getitem__ (idx)\n\nGet the item at the provided idx.\n\nsource\n\n\nDatasetWrapper.__len__\n\n DatasetWrapper.__len__ ()\n\nReturns the length of the dataset. Depends on the state of the dataloader (train, val, test).",
+    "crumbs": [
+      "Utils",
+      "General utils"
+    ]
+  },
+  {
+    "objectID": "10_dataloaders/base_dataloader.html",
+    "href": "10_dataloaders/base_dataloader.html",
+    "title": "Base dataloader",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Dataloaders",
+      "Base dataloader"
+    ]
+  },
+  {
+    "objectID": "10_dataloaders/base_dataloader.html#basedataloader",
+    "href": "10_dataloaders/base_dataloader.html#basedataloader",
+    "title": "Base dataloader",
+    "section": "BaseDataLoader",
+    "text": "BaseDataLoader\n\n BaseDataLoader ()\n\nBase class for data loaders. The idea of the data loader is to provide all external information to the environment (including lagged data, demand etc.). Internal data influenced by past decisions (like inventory levels) is to be added from within the environment\nTrain-Val-Test split:\n\nThe dataloader contains all data, including the training, validation and test sets.\nRetrieval of the dataset types is achieved by setting the internal state to train, validation or test using appropriate functions. Then the index will automatically be adjusted to the correct dataset (see below on data retrieval).\nDuring training, both the agent and experiment function may have to know the length of the dataset. Therefore, the functions len_train, len_val and len_test with decorator @property must be defined\n\nData retrieval:\n\nData retrieval is done with the ___getitem___ function. The function takes an index and returns the data at that index, typically as and X and Y pair.\nFor non-distribution-based dataloaders, the __init__ function must have arguments val_index_start and test_index_start from which the attributes val_index_start and test_index_start and train_index_endare set. The __getitem__ function must then check the index and return the correct data based on the internal state of the dataloader.\n\n\nsource\n\nBaseDataLoader.__len__\n\n BaseDataLoader.__len__ ()\n\nReturns the length of the dataset. For dataloaders based on distributions, this should return an error that the length is not defined, otherwise it should return the number of samples in the dataset.\n\nsource\n\n\nBaseDataLoader.__getitem__\n\n BaseDataLoader.__getitem__ (idx)\n\nReturns always a tuple of X and Y data. If no X data is available, return None.\n\nsource\n\n\nBaseDataLoader.X_shape\n\n BaseDataLoader.X_shape ()\n\nReturns the shape of the X data. It should follow the format (n_samples, n_features). If the data has a time dimension with a fixed length, the shape should be (n_samples, n_time_steps, n_features). If the data is generated from a distribtition, n_samples should be set to 1.\n\nsource\n\n\nBaseDataLoader.Y_shape\n\n BaseDataLoader.Y_shape ()\n\nReturns the shape of the Y data. It should follow the format (n_samples, n_SKUs). If the variable of interst is only a single SKU, the shape should be (n_samples, 1). If the data is generated from a distribtition, n_samples should be set to 1.\n\nsource\n\n\nBaseDataLoader.get_all_X\n\n BaseDataLoader.get_all_X (dataset_type:str='train')\n\nReturns the entire features dataset. If no X data is available, return None. Return either the train, val, test, or all data.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndataset_type\nstr\ntrain\ncan be ‘train’, ‘val’, ‘test’, ‘all’\n\n\n\n\nsource\n\n\nBaseDataLoader.get_all_Y\n\n BaseDataLoader.get_all_Y (dataset_type:str='train')\n\nReturns the entire target dataset. If no Y data is available, return None. Return either the train, val, test, or all data.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\ndataset_type\nstr\ntrain\ncan be ‘train’, ‘val’, ‘test’, ‘all’\n\n\n\n\nsource\n\n\nBaseDataLoader.len_train\n\n BaseDataLoader.len_train ()\n\nReturns the length of the training set. For dataloaders based on distributions, this should return an error that the length is not defined, otherwise it should return the number of samples in the training set.\n\nsource\n\n\nBaseDataLoader.len_val\n\n BaseDataLoader.len_val ()\n\n*Returns the length of the validation set. For dataloaders based on distributions, this should return an error that the length is not defined, otherwise it should return the number of samples in the validation set.\nIf no valiation set is defined, raise an error.*\n\nsource\n\n\nBaseDataLoader.len_test\n\n BaseDataLoader.len_test ()\n\n*Returns the length of the test set. For dataloaders based on distributions, this should return an error that the length is not defined, otherwise it should return the number of samples in the test set.\nIf no test set is defined, raise an error.*\n\nsource\n\n\nBaseDataLoader.train\n\n BaseDataLoader.train ()\n\nSet the internal state of the dataloader to train\n\nsource\n\n\nBaseDataLoader.val\n\n BaseDataLoader.val ()\n\nSet the internal state of the dataloader to validation\n\nsource\n\n\nBaseDataLoader.test\n\n BaseDataLoader.test ()\n\nSet the internal state of the dataloader to test",
+    "crumbs": [
+      "Dataloaders",
+      "Base dataloader"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_erm_agents.html",
+    "href": "41_NV_agents/nv_erm_agents.html",
+    "title": "ERM agents",
+    "section": "",
+    "text": "source",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "ERM agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_erm_agents.html#sgdbaseagent",
+    "href": "41_NV_agents/nv_erm_agents.html#sgdbaseagent",
+    "title": "ERM agents",
+    "section": "SGDBaseAgent",
+    "text": "SGDBaseAgent\n\n SGDBaseAgent (environment_info:ddopnew.utils.MDPInfo,\n               dataloader:ddopnew.dataloaders.base.BaseDataLoader,\n               optimizer_params:Optional[dict]=None,\n               learning_rate_scheduler=None,\n               dataloader_params:Optional[dict]=None,\n               preprocessors:Optional[List]=None,\n               postprocessors:Optional[List]=None,\n               torch_preprocessors:Optional[List]=None, device:str='cpu')\n\nBase class for Agents that are trained using Stochastic Gradient Descent (SGD) on PyTorch models.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ndataloader\nBaseDataLoader\n\n\n\n\noptimizer_params\nOptional\nNone\ndefault: {“optimizer”: “Adam”, “lr”: 0.01, “weight_decay”: 0.0}\n\n\nlearning_rate_scheduler\nNoneType\nNone\nTODO: add base class for learning rate scheduler for typing\n\n\ndataloader_params\nOptional\nNone\ndefault: {“batch_size”: 32, “shuffle”: True}\n\n\npreprocessors\nOptional\nNone\ndefault: []\n\n\npostprocessors\nOptional\nNone\ndefault: []\n\n\ntorch_preprocessors\nOptional\nNone\ndefault: []\n\n\ndevice\nstr\ncpu\n“cuda” or “cpu”\n\n\n\n\nImportant notes:\nSGD-based agents are all agents that are trained via SGD such as Linear Models or Neural Networks. Some specific requirements are necessary to make them interface properly with the environment.\nTorch perprocessors:\n\nIn addition to the general Numpy-based pre-processor, we also provide pre-processors that work on tensor level within the fit_epoch method and the predict method. They can be used in addition to the numpy-based pre-processors or instead of them. It’s important to ensure that the shape of observations (after pre-processing) is the same for those from the environemnt and those from the dataloader during training.\n\nDataloader:\n\nAs for normal supervised learning via Torch, we make use of the Torch dataloader to load the data. Instead of defining a custom dataset class, we provide a Wrapper that can be used around our dataloader to make its output and interface the same as a Torch dataset. The dataloader is then initialized when the agent is created such that the agent has access to the same dataloader as the environment.\n\nTraining process:\n\nThe outper loop of the training process (epochs) is handled outside the agent by the [`run_experiment`](https://opimwue.github.io/ddopnew/30_experiment_functions/experiment_functions.html#run_experiment)functions (or can also be customized). The agent needs to have a fit_epoch method that tells the agent what to do within an epoch. This includes:\n\nGetting the data from the dataloader\nPre-processing the data\nForward pass\nLoss calculation\nBackward pass\n\n\n\nsource\n\n\nSGDBaseAgent.set_dataloader\n\n SGDBaseAgent.set_dataloader\n                              (dataloader:ddopnew.dataloaders.base.BaseDat\n                              aLoader, dataloader_params:dict)\n\nSet the dataloader for the agent by wrapping it into a Torch Dataset\n\n\n\n\nType\nDetails\n\n\n\n\ndataloader\nBaseDataLoader\n\n\n\ndataloader_params\ndict\ndict with keys: batch_size, shuffle\n\n\nReturns\nNone\n\n\n\n\n\nsource\n\n\nSGDBaseAgent.set_loss_function\n\n SGDBaseAgent.set_loss_function ()\n\nSet loss function for the model\n\nsource\n\n\nSGDBaseAgent.set_model\n\n SGDBaseAgent.set_model ()\n\nSet the model for the agent\n\nsource\n\n\nSGDBaseAgent.set_optimizer\n\n SGDBaseAgent.set_optimizer (optimizer_params:dict)\n\nSet the optimizer for the model\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\noptimizer_params\ndict\ndict with keys: optimizer, lr, weight_decay\n\n\n\n\nsource\n\n\nSGDBaseAgent.set_learning_rate_scheduler\n\n SGDBaseAgent.set_learning_rate_scheduler\n                                           (learning_rate_scheduler:None=N\n                                           one)\n\nSet learning rate scheudler (can be None)\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nlearning_rate_scheduler\nNone\nNone\n\n\n\n\n\nsource\n\n\nSGDBaseAgent.fit_epoch\n\n SGDBaseAgent.fit_epoch ()\n\nFit the model for one epoch using the dataloader\n\nsource\n\n\nSGDBaseAgent.draw_action_\n\n SGDBaseAgent.draw_action_ (observation:numpy.ndarray)\n\nDraw an action based on the fitted model (see predict method)\n\n\n\n\nType\nDetails\n\n\n\n\nobservation\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nSGDBaseAgent.predict\n\n SGDBaseAgent.predict (X:numpy.ndarray)\n\nDo one forward pass of the model and return the prediction\n\n\n\n\nType\nDetails\n\n\n\n\nX\nndarray\n\n\n\nReturns\nndarray\n\n\n\n\n\nsource\n\n\nSGDBaseAgent.train\n\n SGDBaseAgent.train ()\n\nset the internal state of the agent and its model to train\n\nsource\n\n\nSGDBaseAgent.eval\n\n SGDBaseAgent.eval ()\n\nset the internal state of the agent and its model to eval\n\nsource\n\n\nSGDBaseAgent.to\n\n SGDBaseAgent.to (device:str)\n\nMove the model to the specified device\n\n\n\n\nType\nDetails\n\n\n\n\ndevice\nstr\n\n\n\n\n\nsource\n\n\nSGDBaseAgent.save\n\n SGDBaseAgent.save (path:str, overwrite:bool=True)\n\nSave the PyTorch model to a file in the specified directory.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\npath\nstr\n\nThe directory where the file will be saved.\n\n\noverwrite\nbool\nTrue\nAllow overwriting; if False, a FileExistsError will be raised if the file exists.\n\n\n\n\nsource\n\n\nSGDBaseAgent.load\n\n SGDBaseAgent.load (path:str)\n\nLoad the PyTorch model from a file.\n\n\n\n\n\n\n\n\n\nType\nDetails\n\n\n\n\npath\nstr\nOnly the path to the folder is needed, not the file itself\n\n\n\n\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "ERM agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_erm_agents.html#nvbaseagent",
+    "href": "41_NV_agents/nv_erm_agents.html#nvbaseagent",
+    "title": "ERM agents",
+    "section": "NVBaseAgent",
+    "text": "NVBaseAgent\n\n NVBaseAgent (environment_info:ddopnew.utils.MDPInfo,\n              dataloader:ddopnew.dataloaders.base.BaseDataLoader,\n              cu:numpy.ndarray|ddopnew.utils.Parameter,\n              co:numpy.ndarray|ddopnew.utils.Parameter,\n              optimizer_params:dict|None=None,\n              learning_rate_scheduler=None,\n              dataloader_params:dict|None=None,\n              preprocessors:list|None=None, postprocessors:list|None=None,\n              torch_preprocessors:list|None=None, device:str='cpu')\n\nBase agent for the Newsvendor problem implementing the loss function for the Empirical Risk Minimization (ERM) approach based on quantile loss.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ndataloader\nBaseDataLoader\n\n\n\n\ncu\nnumpy.ndarray | ddopnew.utils.Parameter\n\n\n\n\nco\nnumpy.ndarray | ddopnew.utils.Parameter\n\n\n\n\noptimizer_params\ndict | None\nNone\ndefault: {“optimizer”: “Adam”, “lr”: 0.01, “weight_decay”: 0.0}\n\n\nlearning_rate_scheduler\nNoneType\nNone\nTODO: add base class for learning rate scheduler for typing\n\n\ndataloader_params\ndict | None\nNone\ndefault: {“batch_size”: 32, “shuffle”: True}\n\n\npreprocessors\nlist | None\nNone\ndefault: []\n\n\npostprocessors\nlist | None\nNone\ndefault: []\n\n\ntorch_preprocessors\nlist | None\nNone\ndefault: []\n\n\ndevice\nstr\ncpu\n“cuda” or “cpu”\n\n\n\n\nsource\n\nNVBaseAgent.set_loss_function\n\n NVBaseAgent.set_loss_function ()\n\nSet the loss function for the model to the quantile loss. For training the model uses quantile loss and not the pinball loss with specific cu and co values to ensure similar scale of the feedback signal during training.\n\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "ERM agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_erm_agents.html#newsvendorlermagent",
+    "href": "41_NV_agents/nv_erm_agents.html#newsvendorlermagent",
+    "title": "ERM agents",
+    "section": "NewsvendorlERMAgent",
+    "text": "NewsvendorlERMAgent\n\n NewsvendorlERMAgent (environment_info:ddopnew.utils.MDPInfo,\n                      dataloader:ddopnew.dataloaders.base.BaseDataLoader,\n                      cu:numpy.ndarray|ddopnew.utils.Parameter,\n                      co:numpy.ndarray|ddopnew.utils.Parameter,\n                      optimizer_params:dict|None=None,\n                      learning_rate_scheduler=None,\n                      model_params:dict|None=None,\n                      dataloader_params:dict|None=None,\n                      preprocessors:list|None=None,\n                      postprocessors:list|None=None,\n                      torch_preprocessors:list|None=None,\n                      device:str='cpu')\n\nNewsvendor agent implementing Empirical Risk Minimization (ERM) approach based on a linear (regression) model. Note that this implementation finds the optimal regression parameters via SGD.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ndataloader\nBaseDataLoader\n\n\n\n\ncu\nnumpy.ndarray | ddopnew.utils.Parameter\n\n\n\n\nco\nnumpy.ndarray | ddopnew.utils.Parameter\n\n\n\n\noptimizer_params\ndict | None\nNone\ndefault: {“optimizer”: “Adam”, “lr”: 0.01, “weight_decay”: 0.0}\n\n\nlearning_rate_scheduler\nNoneType\nNone\nTODO: add base class for learning rate scheduler for typing\n\n\nmodel_params\ndict | None\nNone\ndefault: {“input_size”: 1, “output_size”: 1, “relu_output”: False}\n\n\ndataloader_params\ndict | None\nNone\ndefault: {“batch_size”: 32, “shuffle”: True}\n\n\npreprocessors\nlist | None\nNone\ndefault: []\n\n\npostprocessors\nlist | None\nNone\ndefault: []\n\n\ntorch_preprocessors\nlist | None\nNone\ndefault: [FlattenTimeDim(allow_2d=False)]\n\n\ndevice\nstr\ncpu\n“cuda” or “cpu”\n\n\n\n\nFurther information:\nReferences\n----------\n\n.. [1] Gah-Yi Ban, Cynthia Rudin, \"The Big Data Newsvendor: Practical Insights\n    from Machine Learning\", 2018.\n\nsource\n\n\nNewsvendorlERMAgent.set_model\n\n NewsvendorlERMAgent.set_model ()\n\nSet the model for the agent to a linear model\nExample usage:\n\nfrom ddopnew.envs.inventory import NewsvendorEnv\nfrom ddopnew.dataloaders.tabular import XYDataLoader\nfrom ddopnew.experiment_functions import run_experiment, test_agent\n\nval_index_start = 800 #90_000\ntest_index_start = 900 #100_000\n\nX = np.random.rand(1000, 2)\nY = np.random.rand(1000, 1)\n\ndataloader = XYDataLoader(X, Y, val_index_start, test_index_start)\n\nenvironment = NewsvendorEnv(\n    dataloader = dataloader,\n    underage_cost = 0.42857,\n    overage_cost = 1.0,\n    gamma = 0.999,\n    horizon_train = 365,\n)\n\nagent = NewsvendorlERMAgent(environment.mdp_info,\n                            dataloader,\n                            cu=np.array([0.42857]),\n                            co=np.array([1.0]),\n                            optimizer_params= {\"optimizer\": \"Adam\", \"lr\": 0.01, \"weight_decay\": 0.0}, # other optimizers: \"SGD\", \"RMSprop\"\n                            learning_rate_scheduler = None, # TODO add base class for learning rate scheduler for typing\n                            model_params = {\"input_size\": 2, \"output_size\": 1, \"relu_output\": False}, #\n                            dataloader_params={\"batch_size\": 32, \"shuffle\": True},\n                            torch_preprocessors = [],\n                            device = \"cpu\" # \"cuda\" or \"cpu\"\n)\n\nenvironment.test()\nagent.eval()\n\nR, J = test_agent(agent, environment)\n\nprint(R, J)\n\nrun_experiment(agent, environment, 2, run_id = \"test\") # fit agent via run_experiment function\n\nenvironment.test()\nagent.eval()\n\nR, J = test_agent(agent, environment)\n\nprint(R, J)\n\n-18.77731288981948 -17.819526785566936\n-16.28438767106775 -15.455730022986078\n\n\n\nsource",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "ERM agents"
+    ]
+  },
+  {
+    "objectID": "41_NV_agents/nv_erm_agents.html#newsvendordlagent",
+    "href": "41_NV_agents/nv_erm_agents.html#newsvendordlagent",
+    "title": "ERM agents",
+    "section": "NewsvendorDLAgent",
+    "text": "NewsvendorDLAgent\n\n NewsvendorDLAgent (environment_info:ddopnew.utils.MDPInfo,\n                    dataloader:ddopnew.dataloaders.base.BaseDataLoader,\n                    cu:numpy.ndarray|ddopnew.utils.Parameter,\n                    co:numpy.ndarray|ddopnew.utils.Parameter,\n                    optimizer_params:dict|None=None,\n                    learning_rate_scheduler=None,\n                    model_params:dict|None=None,\n                    dataloader_params:dict|None=None,\n                    preprocessors:list|None=None,\n                    postprocessors:list|None=None,\n                    torch_preprocessors:list|None=None, device:str='cpu')\n\nNewsvendor agent implementing Empirical Risk Minimization (ERM) approach based on a deep learning model.\n\n\n\n\n\n\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\ndataloader\nBaseDataLoader\n\n\n\n\ncu\nnumpy.ndarray | ddopnew.utils.Parameter\n\n\n\n\nco\nnumpy.ndarray | ddopnew.utils.Parameter\n\n\n\n\noptimizer_params\ndict | None\nNone\ndefault: {“optimizer”: “Adam”, “lr”: 0.01, “weight_decay”: 0.0}\n\n\nlearning_rate_scheduler\nNoneType\nNone\nTODO: add base class for learning rate scheduler for typing\n\n\nmodel_params\ndict | None\nNone\ndefault: {“input_size”: 1, “output_size”: 1, “relu_output”: False}\n\n\ndataloader_params\ndict | None\nNone\ndefault: {“batch_size”: 32, “shuffle”: True}\n\n\npreprocessors\nlist | None\nNone\ndefault: []\n\n\npostprocessors\nlist | None\nNone\ndefault: []\n\n\ntorch_preprocessors\nlist | None\nNone\ndefault: [FlattenTimeDim(allow_2d=False)]\n\n\ndevice\nstr\ncpu\n“cuda” or “cpu”\n\n\n\n\nFurther information:\nReferences\n----------\n\n.. [1] Afshin Oroojlooyjadid, Lawrence V. Snyder, Martin Takáˇc,\n        \"Applying Deep Learning to the Newsvendor Problem\", 2018.\n\nsource\n\n\nNewsvendorDLAgent.set_model\n\n NewsvendorDLAgent.set_model ()\n\nSet the model for the agent to an MLP\nExample usage:\n\ndataloader = XYDataLoader(X, Y, val_index_start, test_index_start)\n\nenvironment = NewsvendorEnv(\n    dataloader = dataloader,\n    underage_cost = 0.42857,\n    overage_cost = 1.0,\n    gamma = 0.999,\n    horizon_train = 365,\n)\n\n\nmodel_params = {\n    \"input_size\": 2,\n}\n\nagent = NewsvendorDLAgent(environment.mdp_info,\n                            dataloader,\n                            cu=np.array([0.42857]),\n                            co=np.array([1.0]),\n                            optimizer_params= {\"optimizer\": \"Adam\", \"lr\": 0.01, \"weight_decay\": 0.0}, # other optimizers: \"SGD\", \"RMSprop\"\n                            learning_rate_scheduler = None, # TODO add base class for learning rate scheduler for typing\n                            model_params = model_params, #\n                            dataloader_params={\"batch_size\": 32, \"shuffle\": True},\n                            torch_preprocessors = [],\n                            device = \"cpu\" # \"cuda\" or \"cpu\"\n)\n\nenvironment.test()\nagent.eval()\n\nR, J = test_agent(agent, environment)\n\nprint(R, J)\n\nrun_experiment(agent, environment, 2, run_id = \"test\") # fit agent via run_experiment function\n\nenvironment.test()\nagent.eval()\n\nR, J = test_agent(agent, environment)\n\nprint(R, J)\n\n-20.676206883486223 -19.680784756010233\n-18.239607529050907 -17.394641243509867",
+    "crumbs": [
+      "Agents",
+      "Newsvendor_agents",
+      "ERM agents"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "ddopnew",
+    "section": "",
+    "text": "pip install ddopnew",
+    "crumbs": [
+      "ddopnew"
+    ]
+  },
+  {
+    "objectID": "index.html#install",
+    "href": "index.html#install",
+    "title": "ddopnew",
+    "section": "",
+    "text": "pip install ddopnew",
+    "crumbs": [
+      "ddopnew"
+    ]
+  },
+  {
+    "objectID": "index.html#what-is-ddopnew",
+    "href": "index.html#what-is-ddopnew",
+    "title": "ddopnew",
+    "section": "What is ddopnew?",
+    "text": "What is ddopnew?\nTo be written.",
+    "crumbs": [
+      "ddopnew"
+    ]
+  },
+  {
+    "objectID": "40_base_agents/basic_agents.html",
+    "href": "40_base_agents/basic_agents.html",
+    "title": "Basic agents",
+    "section": "",
+    "text": "source\n\nRandomAgent\n\n RandomAgent (environment_info:ddopnew.utils.MDPInfo,\n              preprocessors:list[object]|None=None,\n              postprocessors:list[object]|None=None)\n\nA random agent that samples actions from the environment’s action space. Useful for testing and as minimal baseline.\n\n\n\n\nType\nDefault\nDetails\n\n\n\n\nenvironment_info\nMDPInfo\n\n\n\n\npreprocessors\nlist[object] | None\nNone\n\n\n\npostprocessors\nlist[object] | None\nNone",
+    "crumbs": [
+      "Agents",
+      "Basic agents",
+      "Basic agents"
+    ]
+  }
+]
